@@ -1,44 +1,79 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Firestore接続テスト</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firestore接続テスト</title>
+<style>
+body{font-family:sans-serif;background:#f1f7f2;padding:20px;color:#173d29}
+main{max-width:500px;margin:auto;background:white;padding:20px;border-radius:12px}
+button{display:block;width:100%;padding:15px;margin:12px 0;background:#23834c;color:white;border:0;border-radius:8px;font-size:16px}
+button:disabled{background:#aaa}
+pre{background:#eef4ef;padding:15px;white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main>
+<h2>Firestore接続テスト</h2>
+<button id="login" disabled>Googleでログイン</button>
+<button id="write" disabled>① テストデータを書き込む</button>
+<button id="read" disabled>② テストデータを読み込む</button>
+<button id="logout" disabled>ログアウト</button>
+<h3>テスト結果</h3>
+<pre id="result">接続準備中...</pre>
+</main>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import{getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import{getFirestore,doc,setDoc,getDoc}from"https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f1f7f2;
-      color: #173d29;
-      padding: 20px;
-      line-height: 1.6;
-    }
+const app=initializeApp({
+apiKey:"AIzaSyCKSWObv6oueliMX7bRhTTsAy3nS065Zvg",
+authDomain:"farm-ai-system.firebaseapp.com",
+projectId:"farm-ai-system",
+storageBucket:"farm-ai-system.firebasestorage.app",
+messagingSenderId:"469927403647",
+appId:"1:469927403647:web:cd05e7ddc50d33ac169f4a"
+});
 
-    .container {
-      max-width: 600px;
-      margin: 30px auto;
-      padding: 25px;
-      background: white;
-      border-radius: 15px;
-    }
+const auth=getAuth(app),db=getFirestore(app);
+const uid="ZsbRiqTgDyVBxKf4SJTN5k1KiQP2";
+const $=id=>document.getElementById(id);
+const show=s=>$("result").textContent=s;
+const ref=()=>doc(db,"connection_tests",uid);
 
-    button {
-      display: block;
-      width: 100%;
-      padding: 15px;
-      margin: 15px 0;
-      border: none;
-      border-radius: 8px;
-      background: #23834c;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
+onAuthStateChanged(auth,user=>{
+const admin=user?.uid===uid;
+$("login").disabled=!!user;
+$("logout").disabled=!user;
+$("write").disabled=!admin;
+$("read").disabled=!admin;
+show(user?(admin?"管理者ログイン成功":"管理者以外のアカウントです"):"ログインしてください");
+});
 
-    button:disabled {
-      background: #a9b9ae;
-      cursor: not-allowed;
-    }
+$("login").onclick=async()=>{
+try{await signInWithPopup(auth,new GoogleAuthProvider())}
+catch(e){show("ログインエラー: "+e.code+" "+e.message)}
+};
 
-    #result
+$("write").onclick=async()=>{
+try{
+await setDoc(ref(),{message:"Firestore接続成功",updatedAt:new Date().toISOString(),uid});
+show("① 書き込み成功！");
+}catch(e){show("書き込みエラー: "+e.code+" "+e.message)}
+};
+
+$("read").onclick=async()=>{
+try{
+const s=await getDoc(ref());
+show(s.exists()?"② 読み込み成功！\n"+JSON.stringify(s.data(),null,2):"データがありません");
+}catch(e){show("読み込みエラー: "+e.code+" "+e.message)}
+};
+
+$("logout").onclick=async()=>{
+try{await signOut(auth)}
+catch(e){show("ログアウトエラー: "+e.message)}
+};
+</script>
+</body>
+</html>
