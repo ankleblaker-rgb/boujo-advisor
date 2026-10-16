@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>農業日誌AI｜水耕小ネギ 運用版 修正版</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#fff;color:#18352a;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+header{background:#16834b;color:#fff;padding:14px 16px;position:sticky;top:0;z-index:5}header h1{font-size:19px;margin:0}header small{opacity:.9}
+nav{display:flex;gap:6px;padding:8px;background:#f1f7f3;position:sticky;top:61px;z-index:4;overflow:auto}nav button{border:0;background:#fff;color:#16834b;padding:10px 14px;font-weight:700;white-space:nowrap;border-radius:4px}nav button.active{background:#16834b;color:#fff}
+main{padding:14px;max-width:760px;margin:auto}section{display:none}section.active{display:block}.card{border:1px solid #d8e6de;border-radius:8px;padding:14px;margin:10px 0;background:#fff;box-shadow:0 1px 3px #0000000a}
+h2{font-size:18px;margin:6px 0 12px}h3{font-size:16px;margin:4px 0 8px}label{font-weight:700;font-size:14px;display:block;margin:10px 0 5px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #b9cdbf;border-radius:4px;font-size:16px;background:#fff}textarea{min-height:70px}
+button.primary{width:100%;border:0;border-radius:4px;padding:12px;background:#16834b;color:#fff;font-weight:800;font-size:16px;margin-top:12px}button.secondary{border:1px solid #16834b;background:#fff;color:#16834b;border-radius:4px;padding:9px 12px;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:#f4faf6;padding:12px;border-left:4px solid #16834b}.stat b{display:block;font-size:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;border-bottom:1px solid #e2ebe5;text-align:left;vertical-align:top}th{background:#f3f8f5}
+.badge{display:inline-block;padding:3px 7px;border-radius:3px;background:#e9f5ed;color:#126c3e;font-weight:700;font-size:12px}.warn{background:#fff5df;border-left:4px solid #e1a500;padding:10px;margin:8px 0}.ok{background:#edf8f0;border-left:4px solid #16834b;padding:10px;margin:8px 0}
+.candidate{border:1px solid #cfe1d5;padding:12px;margin:8px 0;border-radius:6px}.candidate button{margin-top:8px;width:100%}
+.muted{color:#64766c;font-size:13px}.hidden{display:none!important}.success{background:#eaf8ef;border:1px solid #9bd0ad;padding:12px;border-radius:6px;margin-top:10px}
+@media(min-width:600px){.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}}
+</style></head>
+<body>
+<header><h1>農業日誌AI｜水耕小ネギ</h1><small>防除アドバイザー・散布記録 運用版</small></header>
+<nav id="nav">
+<button data-tab="home" class="active">ホーム</button><button data-tab="register">散布登録</button><button data-tab="advice">防除判断</button><button data-tab="list">農薬一覧</button>
+</nav>
+<main>
+<section id="home" class="active">
+<h2>ホーム</h2>
+<div class="grid3">
+<div class="stat"><span class="muted">栽培</span><b>水耕</b>小ネギ</div>
+<div class="stat"><span class="muted">最新散布</span><b id="latestDate">-</b></div>
+<div class="stat"><span class="muted">記録件数</span><b id="count">-</b></div>
+</div>
+<div class="card"><h3>最新の防除記録</h3><div id="recent"></div></div>
+<div class="card"><h3>データのバックアップ・復元</h3><p class="muted">公開URLへ移行する前に、今まで使っていた画面でバックアップを保存してください。ブラウザやURLが変わると記録は自動移行されません。</p><button class="secondary" id="exportBackup" style="width:100%">散布記録をバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元は現在の散布記録を置き換えます。復元前にもバックアップを保存してください。</p></div>
+<div class="card"><h3>今回の重要ポイント</h3>
+<div class="ok">防除判断から「この農薬を散布した」を押すと、散布登録画面へ農薬・対象害虫が自動入力されます。</div>
+<div class="muted">候補として表示されただけでは散布履歴に入りません。実際に散布した場合だけ登録してください。</div>
+</div>
+</section>
+
+<section id="register">
+<h2>散布登録</h2>
+<div class="card">
+<label>散布日</label><input id="date" type="date">
+<label>散布した農薬（複数選択可）</label>
+<div class="muted">殺虫剤・殺菌剤など、今回散布した農薬をすべて選択してください。</div>
+<div id="pesticideChoices"></div>
+<label>対象害虫・病害（農薬選択時に自動入力・編集可）</label><textarea id="target" placeholder="選択した農薬の対象害虫・病害が自動入力されます"></textarea>
+<label>メモ</label><textarea id="memo" placeholder="散布場所・散布量など"></textarea>
+<button class="primary" id="save">散布を登録する</button>
+<button class="secondary hidden" id="deleteRecord" style="width:100%;margin-top:8px;border-color:#b42318;color:#b42318">この散布記録を削除</button>
+<button class="secondary hidden" id="cancelEdit" style="width:100%;margin-top:8px">編集をキャンセル</button>
+<div id="saved"></div>
+</div>
+<div class="card"><h3>登録時の注意</h3><div class="muted">この画面は記録管理用です。実際の使用可否、希釈倍数、使用回数、収穫前日数、使用方法は必ず最新のラベル・登録情報を確認してください。</div></div>
+</section>
+
+<section id="advice">
+<h2>防除判断</h2>
+<div class="card">
+<label>収穫予定日</label><input id="harvest" type="date">
+<label>対象害虫・病害</label><input id="adviceTarget" value="ネギアザミウマ">
+<button class="primary" id="showAdvice">候補を表示</button>
+</div>
+<div id="adviceResult"></div>
+</section>
+
+<section id="list">
+<h2>農薬一覧</h2>
+<div class="card"><div class="muted">現在登録している農薬マスター。登録内容は参考情報であり、最終的な使用判断は最新ラベル・登録情報で確認してください。</div></div>
+<div id="pesticideList"></div>
+</section>
+</main>
+<script>
+const seedRecords=[["2026-10-10", "コルト顆粒水和剤", "殺虫剤", "IRAC 9B"],["2026-10-03", "ファインセーブフロアブル", "殺虫剤", "IRAC 34"], ["2026-10-03", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-10-03", "バイオキーパー", "その他", "生物農薬"], ["2026-10-01", "グレーシア", "殺虫剤", "IRAC 30"], ["2026-10-01", "レーバスフロアブル", "殺菌剤", "FRAC 40"], ["2026-09-25", "スピノエース顆粒水和剤", "殺虫剤", "IRAC 5"], ["2026-09-24", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-09-24", "マスターピース", "その他", "生物資材"], ["2026-09-22", "ベネビアOD", "殺虫剤", "IRAC 28"], ["2026-09-22", "セイビアーフロアブル20", "殺菌剤", "FRAC 12"], ["2026-09-15", "プレオフロアブル", "殺虫剤", "IRAC UN"], ["2026-09-15", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-09-05", "ファインセーブフロアブル", "殺虫剤", "IRAC 34"], ["2026-08-23", "ディアナSC", "殺虫剤", "IRAC 5"], ["2026-08-23", "アフェットフロアブル", "殺菌剤", "FRAC 7"], ["2026-08-14", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-08-09", "パダンSG水溶剤", "殺虫剤", "IRAC 14"], ["2026-08-09", "メジャーフロアブル", "殺菌剤", "FRAC 11"], ["2026-08-07", "シスルモード", "殺虫剤", "IRAC 30"], ["2026-08-02", "ウララDF", "殺虫剤", "IRAC 29"], ["2026-08-02", "ピシロックフロアブル", "殺菌剤", "FRAC U17"], ["2026-07-26", "グレーシア", "殺虫剤", "IRAC 30"], ["2026-07-26", "レーバスフロアブル", "殺菌剤", "FRAC 40"], ["2026-07-24", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-07-24", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-07-18", "ヨーバルフロアブル", "殺虫剤", "IRAC 28"], ["2026-07-18", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-07-14", "パダンSG水溶剤", "殺虫剤", "IRAC 14"], ["2026-07-12", "ファインセーブフロアブル", "殺虫剤", "IRAC 34"], ["2026-07-12", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-07-09", "ベネビアOD", "殺虫剤", "IRAC 28"], ["2026-07-07", "ディアナSC", "殺虫剤", "IRAC 5"], ["2026-06-20", "アニキ乳剤", "殺虫剤", "IRAC 6"], ["2026-06-20", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-06-13", "ダブルシューターSE", "殺虫剤", "IRAC 5"], ["2026-06-13", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-06-06", "スピノエース顆粒水和剤", "殺虫剤", "IRAC 5"], ["2026-06-06", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-05-30", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-05-30", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-05-23", "コルト顆粒水和剤", "殺虫剤", "IRAC 9B"], ["2026-05-23", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-05-16", "プレオフロアブル", "殺虫剤", "IRAC UN"], ["2026-05-16", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-05-09", "ヨーバルフロアブル", "殺虫剤", "IRAC 28"], ["2026-05-09", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-05-02", "アニキ乳剤", "殺虫剤", "IRAC 6"], ["2026-05-02", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-04-11", "ダントツ水溶剤", "殺虫剤", "IRAC 4A"], ["2026-04-11", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-03-28", "ダブルシューターSE", "殺虫剤", "IRAC 5"], ["2026-03-28", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-03-21", "コルト顆粒水和剤", "殺虫剤", "IRAC 9B"], ["2026-03-21", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-03-14", "スピノエース顆粒水和剤", "殺虫剤", "IRAC 5"], ["2026-03-14", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-03-08", "ベストガード水溶剤", "殺虫剤", "IRAC 4A"], ["2026-03-08", "アフェットフロアブル", "殺菌剤", "FRAC 7"], ["2026-02-01", "ディアナSC", "殺虫剤", "IRAC 5"], ["2026-02-01", "メジャーフロアブル", "殺菌剤", "FRAC 11"], ["2026-01-25", "ベネビアOD", "殺虫剤", "IRAC 28"], ["2026-01-25", "ピシロックフロアブル", "殺菌剤", "FRAC U17"], ["2026-01-10", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-01-10", "ランマンフロアブル", "殺菌剤", "FRAC 21"]];
+const master=[
+["ベネビアOD","殺虫剤","IRAC 28","所持"],["ベストガード水溶剤","殺虫剤","IRAC 4A","所持"],["ディアナSC","殺虫剤","IRAC 5","所持"],["ウララDF","殺虫剤","IRAC 29","所持"],["シスルモード","殺虫剤","IRAC 30","所持"],["プレオフロアブル","殺虫剤","IRAC UN","所持"],["ダントツ水溶剤","殺虫剤","IRAC 4A","所持"],["アグリメック","殺虫剤","IRAC 6","所持"],["ファインセーブフロアブル","殺虫剤","IRAC 34","所持"],["コルト顆粒水和剤","殺虫剤","IRAC 9B","所持"],["スピノエース顆粒水和剤","殺虫剤","IRAC 5","所持"],["アニキ乳剤","殺虫剤","IRAC 6","所持"],["ダブルシューターSE","殺虫剤","IRAC 5 + 未分類","所持"],["ヨーバルフロアブル","殺虫剤","IRAC 28","所持"],["グレーシア","殺虫剤","IRAC 30","所持"],["パダンSG水溶剤","殺虫剤","IRAC 14","所持"],
+["ランマンフロアブル","殺菌剤","FRAC 21","使用履歴あり"],["レーバスフロアブル","殺菌剤","FRAC 40","使用履歴あり"],["アリエッティ水和剤","殺菌剤","FRAC P7","使用履歴あり"],["セイビアーフロアブル20","殺菌剤","FRAC 12","使用履歴あり"],["アミスターフロアブル20","殺菌剤","FRAC 11","使用履歴あり"],["アフェットフロアブル","殺菌剤","FRAC 7","使用履歴あり"],["メジャーフロアブル","殺菌剤","FRAC 11","使用履歴あり"],["ピシロックフロアブル","殺菌剤","FRAC U17","使用履歴あり"],
+["バイオキーパー","その他","生物農薬","使用履歴あり"],["マスターピース","その他","生物資材・要確認","使用履歴あり"],["バリダシン液剤5","その他","FRAC 31（要確認）","追加登録"]];
+const key="nougyounisshi_spray_records_v2";
+let records=JSON.parse(localStorage.getItem(key)||"null")||seedRecords.slice();
+let editingIndex=null;
+function saveData(){localStorage.setItem(key,JSON.stringify(records));}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+function showTab(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));render();}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+function render() {
+ records.sort((a,b)=>b[0].localeCompare(a[0]));
+ document.getElementById("count").textContent=records.length;
+ document.getElementById("latestDate").textContent=records[0]?.[0]||"-";
+ document.getElementById("recent").innerHTML=records.slice(0,12).map(r=>{const i=records.indexOf(r);return `<button type="button" onclick="editRecord(${i})" style="display:block;width:100%;text-align:left;padding:10px 4px;border:0;border-bottom:1px solid #e5eee8;background:#fff;color:#18352a;font-size:15px"><b>${esc(r[0])}</b>　${esc(r[1])} <span class="badge">${esc(r[3])}</span><div class="muted">${esc(r[2])}　｜タップして編集・削除</div></button>`}).join("");
+ 
+ const groups=["殺虫剤","殺菌剤","その他"];
+ document.getElementById("pesticideChoices").innerHTML=groups.map(g=>{const items=master.filter(p=>p[1]===g);return items.length?`<div class="card"><b>${g}</b>${items.map(p=>`<label style="display:flex;align-items:center;gap:9px;font-weight:500;margin:9px 0"><input class="pesticide-check" type="checkbox" value="${esc(p[0])}" style="width:20px;height:20px;flex:0 0 auto"> <span>${esc(p[0])} <span class="muted">(${esc(p[2])})</span></span></label>`).join("")}</div>`:""}).join("");
+ document.querySelectorAll(".pesticide-check").forEach(el=>el.onchange=updateAutoTargets);
+ document.getElementById("pesticideList").innerHTML=master.map(p=>`<div class="card"><b>${esc(p[0])}</b><br><span class="badge">${esc(p[1])}</span> <span class="badge">${esc(p[2])}</span> <span class="muted">${esc(p[3])}</span></div>`).join("");
+}
+
+const targetDefaults={
+ "ベネビアOD":"ネギアザミウマ（登録内容を確認）","ベストガード水溶剤":"ネギアザミウマ（登録内容を確認）","ディアナSC":"ネギアザミウマ（登録内容を確認）","ウララDF":"アブラムシ類など（登録内容を確認）","シスルモード":"ネギアザミウマ（登録内容を確認）","プレオフロアブル":"ネギアザミウマ（登録内容を確認）","ダントツ水溶剤":"ネギアザミウマ（登録内容を確認）","アグリメック":"アザミウマ類・ハダニ類など（登録内容を確認）","ファインセーブフロアブル":"アザミウマ類など（登録内容を確認）","コルト顆粒水和剤":"アブラムシ類など（登録内容を確認）","スピノエース顆粒水和剤":"ネギアザミウマ（登録内容を確認）","アニキ乳剤":"アザミウマ類など（登録内容を確認）","ダブルシューターSE":"アザミウマ類など（登録内容を確認）","ヨーバルフロアブル":"チョウ目害虫など（登録内容を確認）","グレーシア":"ネギアザミウマ（登録内容を確認）","パダンSG水溶剤":"ネギアザミウマなど（登録内容を確認）",
+ "ランマンフロアブル":"病害（対象病害・登録内容を確認）","レーバスフロアブル":"病害（対象病害・登録内容を確認）","アリエッティ水和剤":"病害（対象病害・登録内容を確認）","セイビアーフロアブル20":"病害（対象病害・登録内容を確認）","アミスターフロアブル20":"病害（対象病害・登録内容を確認）","アフェットフロアブル":"病害（対象病害・登録内容を確認）","メジャーフロアブル":"病害（対象病害・登録内容を確認）","ピシロックフロアブル":"病害（対象病害・登録内容を確認）","バイオキーパー":"対象病害・使用方法を確認","マスターピース":"対象・用途を確認","バリダシン液剤5":"対象病害・使用方法・登録内容を確認"
+};
+function updateAutoTargets(){const names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value);const vals=names.map(n=>`${n}：${targetDefaults[n]||"対象害虫・病害はラベルで確認"}`);document.getElementById("target").value=vals.join("\n");}
+function prefill(name,target){document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===name);updateAutoTargets();if(target)document.getElementById("target").value=target;document.getElementById("date").value=new Date().toISOString().slice(0,10);showTab("register");}
+function clearEditMode(){editingIndex=null;document.getElementById("save").textContent="散布を登録する";document.getElementById("deleteRecord").classList.add("hidden");document.getElementById("cancelEdit").classList.add("hidden");document.getElementById("saved").innerHTML="";document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false);document.getElementById("target").value="";document.getElementById("memo").value="";}
+function editRecord(index){const r=records[index];if(!r)return;editingIndex=index;showTab("register");document.getElementById("date").value=r[0];document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===r[1]);document.getElementById("target").value=r[4]||targetDefaults[r[1]]||"";document.getElementById("memo").value=r[5]||"";document.getElementById("save").textContent="修正を保存する";document.getElementById("deleteRecord").classList.remove("hidden");document.getElementById("cancelEdit").classList.remove("hidden");document.getElementById("saved").innerHTML=`<div class="success">編集中：${esc(r[0])}｜${esc(r[1])}<br>修正を保存すると既存記録を上書きします。</div>`;}
+window.editRecord=editRecord;
+document.getElementById("save").onclick=()=>{
+ const d=document.getElementById("date").value,names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value),t=document.getElementById("target").value.trim()||"未入力",m=document.getElementById("memo").value.trim();
+ if(!d||!names.length){alert("散布日と農薬（1種類以上）を選択してください");return}
+ if(editingIndex!==null){if(names.length!==1){alert("編集中の記録は農薬1種類分です。複数種類に変更する場合は、各農薬の記録を個別に編集してください。");return}const p=master.find(x=>x[0]===names[0]);records[editingIndex]=[d,names[0],p?.[1]||"不明",p?.[2]||"不明",t,m];saveData();clearEditMode();document.getElementById("saved").innerHTML='<div class="success">修正を保存しました。防除判断にも反映されます。</div>';render();return;}
+ names.forEach(n=>{const p=master.find(x=>x[0]===n);records.push([d,n,p?.[1]||"不明",p?.[2]||"不明",t,m]);}); saveData();
+ document.getElementById("saved").innerHTML=`<div class="success"><b>${esc(d)}｜${names.map(esc).join("、")}</b><br>${names.length}種類の散布記録を登録しました。防除履歴と系統判定に反映されます。</div>`;
+ document.getElementById("memo").value=""; document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false); render();
+};
+document.getElementById("deleteRecord").onclick=()=>{if(editingIndex===null)return;const r=records[editingIndex];if(!confirm(`${r[0]}の「${r[1]}」を削除しますか？`))return;records.splice(editingIndex,1);saveData();clearEditMode();render();showTab("home");};
+document.getElementById("cancelEdit").onclick=()=>{clearEditMode();render();showTab("home");};
+
+document.getElementById("showAdvice").onclick=()=>{
+ const target=document.getElementById("adviceTarget").value.trim()||"ネギアザミウマ";
+ const recent=records.filter(r=>r[2]==="殺虫剤").slice(0,8);
+ const recentGroups=[...new Set(recent.flatMap(r=>String(r[3]).split("+").map(x=>x.trim())))];
+ const owned=master.filter(p=>p[1]==="殺虫剤");
+ const preferred=[], caution=[];
+ owned.forEach(p=>{ const same=p[2].split("+").map(x=>x.trim()).some(g=>recentGroups.includes(g)); (same?caution:preferred).push(p); });
+ const card=(p,same)=>`<div class="candidate"><b>${esc(p[0])}</b> <span class="badge">${esc(p[2])}</span>${same?`<div class="warn">連用注意：直近の散布履歴に同じIRAC系統があります。</div>`:`<div class="ok">防除候補：直近の散布履歴とは異なるIRAC系統です。</div>`}<div class="muted">対象：${esc(target)}｜水耕小ネギでの使用可否・使用方法・収穫前日数等は最新登録を確認してください。</div><button class="secondary" onclick='prefill(${JSON.stringify(p[0])},${JSON.stringify(target)})'>この農薬を散布した → 登録</button></div>`;
+ document.getElementById("adviceResult").innerHTML=`<div class="card"><h3>直近の殺虫剤系統</h3><p>${recentGroups.map(g=>`<span class="badge">${esc(g)}</span>`).join(" ")||"記録なし"}</p></div><div class="card"><h3>防除候補一覧</h3><div class="muted">直近散布と異なるIRAC系統の農薬を優先表示しています。</div></div>${preferred.length?preferred.map(p=>card(p,false)).join(""):`<div class="card"><div class="warn">直近散布と異なる系統の登録農薬がありません。</div></div>`}${caution.length?`<div class="card" style="margin-top:18px"><h3>連用注意の農薬</h3><div class="muted">直近の散布履歴と同じIRAC系統を含むため、候補の後半に分けています。</div></div>${caution.map(p=>card(p,true)).join("")}`:""}`;
+};
+document.getElementById("exportBackup").onclick=()=>{
+ const payload={app:"nougyounisshi-boujo",version:1,exportedAt:new Date().toISOString(),records};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="防除アドバイザー_散布記録_"+new Date().toLocaleDateString("sv-SE")+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+document.getElementById("importBackup").onchange=async e=>{
+ const f=e.target.files?.[0];if(!f)return;
+ try{
+  const data=JSON.parse(await f.text());
+  if(data.app!=="nougyounisshi-boujo"||!Array.isArray(data.records)||!data.records.every(r=>Array.isArray(r)&&r.length>=4&&r.slice(0,4).every(v=>typeof v==="string")))throw Error("対応するバックアップファイルではありません");
+  if(!confirm(`バックアップの${data.records.length}件で現在の${records.length}件を置き換えますか？`))return;
+  records=data.records;saveData();clearEditMode();render();alert("復元しました（"+records.length+"件）");
+ }catch(err){alert("復元できません："+err.message)}finally{e.target.value=""}
+};
+render();
+</script></body></html>
