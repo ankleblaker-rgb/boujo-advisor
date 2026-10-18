@@ -1,0 +1,8 @@
+// Firestore の既存ルールに、この match 節を追加してください。
+// service cloud.firestore / match /databases/{database}/documents の内側です。
+// 既存の connection_tests ルールは削除しないでください。
+match /boujo_test/{userId} {
+  allow read, write: if request.auth != null
+    && request.auth.uid == userId
+    && request.auth.uid == "ZSbRiqTgDyVBxKf4SJTN5k1KiQP2";
+}
