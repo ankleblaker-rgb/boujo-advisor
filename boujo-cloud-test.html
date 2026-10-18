@@ -24,6 +24,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <main>
 <section id="home" class="active">
 <div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">Googleログイン後に同期します。初回は必ず手動で移行操作を行います。運用版のデータには触れません。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div>
+<div class="card"><b>同期診断版 2</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
 <h2>ホーム</h2>
 <div class="grid3">
 <div class="stat"><span class="muted">栽培</span><b>水耕</b>小ネギ</div>
@@ -82,6 +83,14 @@ let records=JSON.parse(localStorage.getItem(key)||"null")||seedRecords.map((r,i)
 records=records.map((r,i)=>r.length>6&&r[6]?r:[...r.slice(0,6),"legacy-"+i]);
 let cloudBridge=null;
 let editingIndex=null;
+function queueCloudOperation(op){
+ const panel=document.getElementById("syncDiagnostic");
+ const stamp=new Date().toLocaleTimeString();
+ if(!cloudBridge){panel.textContent=stamp+"：端末に保存済み／同期プログラムが未起動のため送信できません。";return;}
+ panel.textContent=stamp+"：端末に保存済み／同期処理へ変更を渡しました。";
+ try{cloudBridge.queue(op);}catch(e){panel.textContent=stamp+"：端末に保存済み／送信処理でエラー："+e.message;return;}
+ setTimeout(()=>{panel.textContent+=" 同期状態："+document.getElementById("cloudStatus").textContent;},2000);
+}
 function saveData(){localStorage.setItem(key,JSON.stringify(records));}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function showTab(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));render();}
@@ -110,12 +119,12 @@ window.editRecord=editRecord;
 document.getElementById("save").onclick=()=>{
  const d=document.getElementById("date").value,names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value),t=document.getElementById("target").value.trim()||"未入力",m=document.getElementById("memo").value.trim();
  if(!d||!names.length){alert("散布日と農薬（1種類以上）を選択してください");return}
- if(editingIndex!==null){if(names.length!==1){alert("編集中の記録は農薬1種類分です。複数種類に変更する場合は、各農薬の記録を個別に編集してください。");return}const p=master.find(x=>x[0]===names[0]);records[editingIndex]=[d,names[0],p?.[1]||"不明",p?.[2]||"不明",t,m,records[editingIndex][6]];saveData();cloudBridge?.queue({type:"upsert",record:records[editingIndex]});clearEditMode();document.getElementById("saved").innerHTML='<div class="success">修正を保存しました。防除判断にも反映されます。</div>';render();return;}
- names.forEach(n=>{const p=master.find(x=>x[0]===n);{const r=[d,n,p?.[1]||"不明",p?.[2]||"不明",t,m,crypto.randomUUID()];records.push(r);cloudBridge?.queue({type:"upsert",record:r});}}); saveData();
+ if(editingIndex!==null){if(names.length!==1){alert("編集中の記録は農薬1種類分です。複数種類に変更する場合は、各農薬の記録を個別に編集してください。");return}const p=master.find(x=>x[0]===names[0]);records[editingIndex]=[d,names[0],p?.[1]||"不明",p?.[2]||"不明",t,m,records[editingIndex][6]];saveData();queueCloudOperation({type:"upsert",record:records[editingIndex]});clearEditMode();document.getElementById("saved").innerHTML='<div class="success">修正を保存しました。防除判断にも反映されます。</div>';render();return;}
+ names.forEach(n=>{const p=master.find(x=>x[0]===n);{const r=[d,n,p?.[1]||"不明",p?.[2]||"不明",t,m,crypto.randomUUID()];records.push(r);queueCloudOperation({type:"upsert",record:r});}}); saveData();
  document.getElementById("saved").innerHTML=`<div class="success"><b>${esc(d)}｜${names.map(esc).join("、")}</b><br>${names.length}種類の散布記録を登録しました。防除履歴と系統判定に反映されます。</div>`;
  document.getElementById("memo").value=""; document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false); render();
 };
-document.getElementById("deleteRecord").onclick=()=>{if(editingIndex===null)return;const r=records[editingIndex];if(!confirm(`${r[0]}の「${r[1]}」を削除しますか？`))return;records.splice(editingIndex,1);saveData();cloudBridge?.queue({type:"delete",id:r[6]});clearEditMode();render();showTab("home");};
+document.getElementById("deleteRecord").onclick=()=>{if(editingIndex===null)return;const r=records[editingIndex];if(!confirm(`${r[0]}の「${r[1]}」を削除しますか？`))return;records.splice(editingIndex,1);saveData();queueCloudOperation({type:"delete",id:r[6]});clearEditMode();render();showTab("home");};
 document.getElementById("cancelEdit").onclick=()=>{clearEditMode();render();showTab("home");};
 
 document.getElementById("showAdvice").onclick=()=>{
@@ -144,4 +153,4 @@ document.getElementById("importBackup").onchange=async e=>{
 };
 render();
 </script>
-<script type="module" src="./boujo-cloud-sync.js"></script></body></html>
+<script type="module" src="./boujo-cloud-sync.js?v=2"></script></body></html>
