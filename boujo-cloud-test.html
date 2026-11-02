@@ -69,7 +69,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 
 <section id="list">
 <h2>農薬一覧</h2>
-<div class="card"><div class="muted">現在登録している農薬マスター。登録内容は参考情報であり、最終的な使用判断は最新ラベル・登録情報で確認してください。</div></div>
+<div class="card"><div class="muted">公式データの取り込み後、各農薬の「使用条件を選んで取り込む」から対象・使用方法を選択します。入力済みの内容は「登録内容と使用条件を確認」で確認できます。</div></div>
 <div class="card" id="lookupSetup">
  <h3>農薬名から詳細を自動入力</h3>
  <p id="lookupStatus" role="status">初回のみ、公式データを取り込んでください。</p>
@@ -161,6 +161,43 @@ function saveData(){localStorage.setItem(key,JSON.stringify(records));}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function showTab(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));render();}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+function catalogCompleteness(m){
+ if(!m?.crop)return '登録作物を選択してください';
+ if(!m.targets?.length)return '対象害虫・病害を選択してください';
+ if(!Number.isInteger(m.phi)||m.phi<0)return '収穫前日数を確認・入力してください';
+ if(!m.source)return '登録情報の出典を入力してください';
+ return '';
+}
+function catalogState(p){
+ const m=p[4],imported=!!m?.details?.Number;
+ if(!m)return {label:'使用条件が未登録',help:'公式データの候補から、この農薬で使う対象・使用方法を選択してください。',ready:false};
+ const missing=catalogCompleteness(m);
+ if(missing)return {label:imported?'基本情報取込済み・使用条件の入力待ち':'登録情報の入力途中',help:missing,ready:false};
+ if(!m.confirmed)return {label:imported?'取込済み・使用条件の確認待ち':'入力済み・使用条件の確認待ち',help:'下の「登録内容と使用条件」を開き、内容を確認すると日数判定に使えます。',ready:true};
+ return {label:imported?'取込済み・日数判定に使用中':'入力済み・日数判定に使用中',help:'日数条件の候補判定に使用します。',ready:true};
+}
+function catalogCard(p,i){
+ const m=p[4]||{},s=catalogState(p),d=m.details||{};
+ const rows=[['登録番号',d.Number],['有効成分',d.Ingredients],['登録を有する者',d.Company],['剤型',d.Form],['登録作物',m.crop],['登録対象',m.targets?.join('、')],['収穫前日数',Number.isInteger(m.phi)?`${m.phi}日`:null],['使用時期',d.Timing],['希釈倍数・使用量',d.Dilution],['散布液量',d.Volume],['使用方法・適用場所',d.Method],['本剤の使用回数',d.MaxUses],['成分の総使用回数',d.TotalUses],['その他の使用条件',d.Restrictions],['出典・データ反映日',m.source]].filter(r=>r[1]!==undefined&&r[1]!==null&&r[1]!=='');
+ return `<div class="card"><b>${esc(p[0])}</b><br><span class="badge">${esc(p[1])}</span> <span class="badge">${esc(p[2])}</span><p class="${m.confirmed&&s.ready?'ok':'muted'}"><b>${esc(s.label)}</b></p>${m.crop?`<p>登録作物：${esc(m.crop)}｜対象：${(m.targets||[]).map(esc).join('、')||'未選択'}${Number.isInteger(m.phi)?`｜収穫${m.phi}日前まで`:''}</p>`:''}<p class="muted">${esc(s.help)}</p>
+ ${rows.length?`<details><summary>登録内容と使用条件を確認</summary><dl>${rows.map(([k,v])=>`<dt style="font-weight:700;margin-top:10px">${esc(k)}</dt><dd style="margin:3px 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(v)}</dd>`).join('')}</dl>${s.ready?`<label style="display:flex;align-items:flex-start;gap:8px"><input type="checkbox" data-catalog-confirm="${i}" ${m.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>表示した作物・対象・使用方法が水耕小ネギで予定する使用に適合することを確認し、日数判定に使う</span></label>`:''}</details>`:''}
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${!m.confirmed?`<button type="button" class="secondary" data-load-pesticide="${i}">${s.ready?'使用条件を変更':'使用条件を選んで取り込む'}</button>`:''}<button type="button" class="secondary" data-edit-pesticide="${i}">編集</button><button type="button" class="secondary" data-delete-pesticide="${i}">削除</button></div></div>`;
+}
+function setCatalogConfirmation(index,checked){
+ const p=master[index];if(!p)return;
+ const missing=catalogCompleteness(p[4]);if(checked&&missing){alert(missing);render();return;}
+ const next=master.map((row,i)=>i===index?[...row.slice(0,4),{...row[4],confirmed:checked}]:row);
+ try{localStorage.setItem(catalogKey,JSON.stringify(next));}catch(e){alert('保存できません：'+e.message);render();return;}
+ master=next;document.getElementById('adviceResult').innerHTML='';render();
+ document.getElementById('catalogMessage').textContent=p[0]+(checked?'：日数判定に使用する設定を保存しました。':'：日数判定の使用を解除しました。');
+}
+function loadCatalogDetails(index){
+ editPesticide(index);lookupSearch();
+ const buttons=document.querySelectorAll('[data-lookup]');
+ // A single candidate is still identified by its official registration number in the form.
+ if(buttons.length===1)buttons[0].click();
+}
+
 function render() {
  const selected=new Set([...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value));
  records.sort((a,b)=>b[0].localeCompare(a[0]));
@@ -173,9 +210,11 @@ function render() {
  document.querySelectorAll(".pesticide-check").forEach(el=>el.onchange=updateAutoTargets);
  document.querySelectorAll(".pesticide-check").forEach(el=>el.checked=selected.has(el.value));
  document.getElementById("registeredTargets").innerHTML=[...new Set(master.flatMap(p=>p[4]?.targets||[]))].map(t=>`<option value="${esc(t)}"></option>`).join("");
- document.getElementById("pesticideList").innerHTML=master.map((p,i)=>`<div class="card"><b>${esc(p[0])}</b><br><span class="badge">${esc(p[1])}</span> <span class="badge">${esc(p[2])}</span><p class="muted">${p[4]?.confirmed?`登録作物：${esc(p[4].crop)}｜収穫${p[4].phi}日前まで｜${p[4].targets.map(esc).join("、")}`:"登録情報が未確認：日数による候補判定の対象外"}</p><button class="secondary" data-edit-pesticide="${i}">編集</button> <button class="secondary" data-delete-pesticide="${i}">削除</button></div>`).join("");
+ document.getElementById("pesticideList").innerHTML=master.map(catalogCard).join("");
  document.querySelectorAll("[data-edit-pesticide]").forEach(b=>b.onclick=()=>editPesticide(Number(b.dataset.editPesticide)));
  document.querySelectorAll("[data-delete-pesticide]").forEach(b=>b.onclick=()=>deletePesticide(Number(b.dataset.deletePesticide)));
+ document.querySelectorAll("[data-load-pesticide]").forEach(b=>b.onclick=()=>loadCatalogDetails(Number(b.dataset.loadPesticide)));
+ document.querySelectorAll("[data-catalog-confirm]").forEach(b=>b.onchange=()=>setCatalogConfirmation(Number(b.dataset.catalogConfirm),b.checked));
 }
 
 const targetDefaults={
@@ -199,13 +238,13 @@ document.getElementById("deleteRecord").onclick=()=>{if(editingIndex===null)retu
 document.getElementById("cancelEdit").onclick=()=>{clearEditMode();render();showTab("home");};
 
 function dateInterval(spray,harvest){if(!spray||!harvest)return null;const a=Date.parse(spray+"T00:00:00Z"),b=Date.parse(harvest+"T00:00:00Z");return Number.isFinite(a)&&Number.isFinite(b)?(b-a)/86400000:null;}
-function adviceReason(p,target,days){const m=p[4];if(!m?.confirmed||!Number.isInteger(m.phi)||m.phi<0||!m.crop||!m.source||!m.targets?.length)return "登録情報が未確認";if(!m.targets.includes(target))return "対象害虫・病害が登録対象と一致しません";if(m.phi>days)return `収穫${m.phi}日前までのため日数不足`;return "";}
+function adviceReason(p,target,days){const m=p[4],missing=catalogCompleteness(m);if(missing)return "使用条件の入力待ち："+missing;if(!m.confirmed)return "使用条件の確認待ち：農薬一覧で内容を確認してください";if(!m.targets.includes(target))return "対象害虫・病害が登録対象と一致しません";if(m.phi>days)return `収穫${m.phi}日前までのため日数不足`;return "";}
 function showAdvice(){
  const target=document.getElementById("adviceTarget").value.trim(),spray=document.getElementById("plannedSpray").value,harvest=document.getElementById("harvest").value,days=dateInterval(spray,harvest),out=document.getElementById("adviceResult");
  if(days===null||days<0||!target){out.innerHTML='<div class="warn">散布予定日・収穫予定日・対象を入力してください。収穫予定日は散布予定日以降にしてください。</div>';return;}
  const recent=records.filter(r=>r[0]<=spray&&r[2]==="殺虫剤").sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8),groups=[...new Set(recent.flatMap(r=>String(r[3]).split("+").map(g=>g.trim())))];
  const eligible=master.filter(p=>!adviceReason(p,target,days)).map(p=>({p,same:p[1]==="殺虫剤"&&p[2].split("+").some(g=>groups.includes(g.trim()))})).sort((a,b)=>Number(a.same)-Number(b.same));
- out.innerHTML=`<div class="card"><b>${esc(spray)}散布 → ${esc(harvest)}収穫：${days}日間</b><p class="muted">入力・確認した登録情報に基づく日数条件の候補です。使用回数・成分総使用回数・希釈倍数などは別途確認してください。</p></div>`+eligible.map(({p,same},i)=>`<div class="candidate"><b>${esc(p[0])}</b> <span class="badge">${esc(p[2])}</span><p>収穫${p[4].phi}日前まで：日数条件を満たします</p>${same?'<div class="warn">連用注意：直近の殺虫剤に同じ系統があります。</div>':""}<p class="muted">登録作物：${esc(p[4].crop)}｜対象：${esc(target)}<br>確認情報：${esc(p[4].source)}</p><button class="secondary" data-advice-index="${i}">散布登録へ（実施後に保存）</button></div>`).join("")+(eligible.length?"":'<div class="warn">確認済みの登録情報で条件に合う農薬がありません。農薬一覧の編集から登録情報を確認・入力してください。</div>')+`<div class="card"><h3>候補に含めなかった農薬</h3>${master.filter(p=>adviceReason(p,target,days)).map(p=>`<p>${esc(p[0])}：${esc(adviceReason(p,target,days))}</p>`).join("")||"なし"}</div>`;
+ out.innerHTML=`<div class="card"><b>${esc(spray)}散布 → ${esc(harvest)}収穫：${days}日間</b><p class="muted">入力・確認した登録情報に基づく日数条件の候補です。使用回数・成分総使用回数・希釈倍数などは別途確認してください。</p></div>`+eligible.map(({p,same},i)=>`<div class="candidate"><b>${esc(p[0])}</b> <span class="badge">${esc(p[2])}</span><p>収穫${p[4].phi}日前まで：日数条件を満たします</p>${same?'<div class="warn">連用注意：直近の殺虫剤に同じ系統があります。</div>':""}<p class="muted">登録作物：${esc(p[4].crop)}｜対象：${esc(target)}<br>確認情報：${esc(p[4].source)}</p><button class="secondary" data-advice-index="${i}">散布登録へ（実施後に保存）</button></div>`).join("")+(eligible.length?"":'<div class="warn">確認済みの登録情報で条件に合う農薬がありません。農薬一覧で「登録内容と使用条件を確認」を開くか、「使用条件を選んで取り込む」から進めてください。</div>')+`<div class="card"><h3>候補に含めなかった農薬</h3>${master.filter(p=>adviceReason(p,target,days)).map(p=>`<p>${esc(p[0])}：${esc(adviceReason(p,target,days))}</p>`).join("")||"なし"}</div>`;
  out.querySelectorAll("[data-advice-index]").forEach(b=>b.onclick=()=>prefill(eligible[Number(b.dataset.adviceIndex)].p[0],target));
 }
 document.getElementById("showAdvice").onclick=showAdvice;
@@ -337,4 +376,5 @@ for(const id of ['catalogCategory','catalogGroup','catalogCrop','catalogTargets'
 
 </script>
 <script type="module" src="./boujo-cloud-sync.js?v=2"></script></body></html>
+
 
