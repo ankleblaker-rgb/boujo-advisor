@@ -24,7 +24,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <main>
 <section id="home" class="active">
 <div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div>
-<div class="card"><b>全データ同期版 3</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
+<div class="card"><b>全データ同期版 4・複数条件対応</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
 <div id="cloudConflict" class="card hidden"><h3>ほかの端末の変更と競合しています</h3><p>比較して、この項目にどちらの内容を使うか選択してください。関連する未同期操作にも適用します。</p><pre id="cloudConflictData" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto"></pre><button id="cloudKeepRemote" class="secondary">この項目はクラウドの内容を使う</button> <button id="cloudKeepLocal" class="secondary">この項目は端末の変更を使う</button></div>
 <button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button>
 <h2>ホーム</h2>
@@ -94,7 +94,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <button class="secondary" type="button" id="lookupSearchButton" style="margin-top:8px">農薬名で検索</button>
  <div id="lookupResults" role="status" aria-live="polite"></div>
  <div id="lookupUses"></div>
- <p class="muted">候補を選ぶと基本情報が入り、使用条件を選ぶと登録作物・対象・収穫前日数などが入ります。使用条件は1行ずつ取り込み、異なる条件を混ぜません。</p>
+ <p class="muted">候補を選ぶと基本情報が入り、使用条件を選ぶと登録作物・対象・収穫前日数などが入ります。「この使用条件を追加」を使い、1剤に複数の条件を保存できます。</p>
  <label for="catalogNumber">登録番号</label><input id="catalogNumber" readonly>
  <label for="catalogIngredients">有効成分・濃度</label><input id="catalogIngredients" readonly>
  <label for="catalogCompany">登録を有する者</label><input id="catalogCompany" readonly>
@@ -102,6 +102,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 
  <label for="catalogCategory">分類</label><select id="catalogCategory"><option>殺虫剤</option><option>殺菌剤</option><option>その他</option></select>
  <label for="catalogGroup">系統（例：IRAC 5、FRAC 11）</label><input id="catalogGroup">
+ <div class="card" style="background:#f5faf7"><h3>保存する使用条件</h3><p id="conditionDraftCount" role="status">保存候補：0件</p><div id="conditionDraftList"></div></div>
+ <h3>入力中の使用条件</h3><p class="muted">対象・方法などの条件を1件ずつ追加できます。選んだ登録行をまとめて1件として保存します。</p>
  <label for="catalogCrop">登録作物名（ラベルの表記）</label><input id="catalogCrop" placeholder="例：ねぎ">
  <label for="catalogTargets">登録対象害虫・病害（カンマ区切り）</label><input id="catalogTargets">
  <label for="catalogPhi">収穫前日数（前日＝1、3日前＝3、当日＝0、未確認は空欄）</label><input id="catalogPhi" type="number" min="0" step="1">
@@ -115,6 +117,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <label for="catalogRestrictions">その他の使用条件</label><textarea id="catalogRestrictions" readonly></textarea>
  <label for="catalogSource">確認した登録情報・ラベルの出典と確認日</label><input id="catalogSource">
  <label style="display:flex;gap:8px;align-items:center"><input id="catalogConfirmed" type="checkbox" style="width:22px;height:22px">入力した登録情報が水耕小ネギでの予定の使用方法に適合することを確認した</label>
+ <button type="button" class="secondary" id="addCondition" style="margin:10px 6px 6px 0">この使用条件を追加</button><button type="button" class="secondary" id="newCondition">新しい条件を入力</button>
  <button class="primary" id="savePesticide">農薬を保存</button><button class="secondary" id="cancelPesticide" style="margin-top:8px">入力をクリア</button>
  <p id="catalogMessage" role="status"></p>
  </div><div id="pesticideList"></div>
@@ -152,8 +155,8 @@ window.BoujoSync=(()=>{
  function merge(state,ops=pending()){return ops.reduce((s,op)=>apply(s,op,true),state);}
  function ack(ids){atomic({[keys.pending]:JSON.stringify(pending().filter(op=>!ids.includes(op.id)))});}
  function rebase(opId,state,useLocal){const ops=pending();const i=ops.findIndex(o=>o.id===opId);if(i<0)return;if(useLocal)ops[i]={...ops[i],changes:ops[i].changes.map(c=>({...c,before:clone(currentValue(state,c))}))};else{const touched=new Set(ops[i].changes.map(c=>c.domain+':'+c.id));ops.splice(i,1);for(let j=i;j<ops.length;j++){if(ops[j].changes.some(c=>touched.has(c.domain+':'+c.id))){for(const c of ops[j].changes)touched.add(c.domain+':'+c.id);ops[j]={...ops[j],changes:[]};}}}atomic({[keys.pending]:JSON.stringify(ops.filter(o=>o.changes.length))});notify();}
- function readCloud(data){if((data.minClientVersion||0)>3)throw Error('アプリの更新が必要です');if(!Array.isArray(data.records))throw Error('クラウドの散布履歴が不正です');const catalog=data.catalogJson===undefined?null:JSON.parse(data.catalogJson);if(catalog!==null&&!validCatalog(catalog))throw Error('クラウドの農薬一覧が不正です');const lookup=data.lookup||null;if(lookup&&(lookup.encoding!=='gzip-base64'||typeof lookup.data!=='string'||typeof lookup.digest!=='string'))throw Error('公式検索データの形式が不正です');const normalized=data.records.map(norm);if(!normalized.every(r=>r.slice(0,4).every(v=>typeof v==='string')&&typeof r[6]==='string')||new Set(normalized.map(r=>r[6])).size!==normalized.length)throw Error('散布履歴の形式・記録IDを確認してください');return {records:normalized,catalog,lookup};}
- function writeCloud(state){const fields={schemaVersion:3,minClientVersion:3,records:state.records.map(recordObject),updatedAt:new Date().toISOString()};if(state.catalog!==null)fields.catalogJson=JSON.stringify(state.catalog);if(state.lookup)fields.lookup=state.lookup;else fields.lookup=null;if(new TextEncoder().encode(JSON.stringify(fields)).length>850000)throw Error('クラウド保存量の上限に近いため保存できません。端末の変更は保持しています');return fields;}
+ function readCloud(data){if((data.minClientVersion||0)>4)throw Error('アプリの更新が必要です');if(!Array.isArray(data.records))throw Error('クラウドの散布履歴が不正です');const catalog=data.catalogJson===undefined?null:JSON.parse(data.catalogJson);if(catalog!==null&&!validCatalog(catalog))throw Error('クラウドの農薬一覧が不正です');const lookup=data.lookup||null;if(lookup&&(lookup.encoding!=='gzip-base64'||typeof lookup.data!=='string'||typeof lookup.digest!=='string'))throw Error('公式検索データの形式が不正です');const normalized=data.records.map(norm);if(!normalized.every(r=>r.slice(0,4).every(v=>typeof v==='string')&&typeof r[6]==='string')||new Set(normalized.map(r=>r[6])).size!==normalized.length)throw Error('散布履歴の形式・記録IDを確認してください');return {records:normalized,catalog,lookup};}
+ function writeCloud(state){const fields={schemaVersion:4,minClientVersion:4,records:state.records.map(recordObject),updatedAt:new Date().toISOString()};if(state.catalog!==null)fields.catalogJson=JSON.stringify(state.catalog);if(state.lookup)fields.lookup=state.lookup;else fields.lookup=null;if(new TextEncoder().encode(JSON.stringify(fields)).length>850000)throw Error('クラウド保存量の上限に近いため保存できません。端末の変更は保持しています');return fields;}
  function packed(){return JSON.parse(localStorage.getItem(keys.packed)||'null');}
  function validLookup(value){return value?.version===1&&typeof value.date==='string'&&Array.isArray(value.products)&&value.products.length>0&&value.products.every(p=>typeof p.id==='string'&&typeof p.name==='string'&&typeof p.category==='string'&&typeof p.company==='string'&&typeof p.form==='string'&&Array.isArray(p.ingredients)&&Array.isArray(p.uses));}
  async function pack(value){if(!validLookup(value))throw Error('公式検索データの形式が不正です');if(typeof CompressionStream==='undefined')throw Error('このブラウザでは検索データを共有できません。Chromeを更新してください');const raw=new TextEncoder().encode(JSON.stringify(value));const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',raw)),b=>b.toString(16).padStart(2,'0')).join('');const bytes=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return {encoding:'gzip-base64',data:btoa(text),digest,date:value.date,count:value.products.length};}
@@ -174,19 +177,54 @@ const key="nougyounisshi_spray_records_cloud_test_v1";
 const catalogKey=key+"_catalog_v1";
 let master=JSON.parse(localStorage.getItem(catalogKey)||"null")||seedMaster.map(p=>p.slice());
 let catalogEditingName=null,catalogOriginalRow=null;
+let catalogConditions=[],conditionEditingId=null;
 function localToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
-function validCatalog(value){return Array.isArray(value)&&value.every(p=>Array.isArray(p)&&p.length>=4&&p.slice(0,4).every(v=>typeof v==="string")&&["殺虫剤","殺菌剤","その他"].includes(p[1])&&(!p[4]||(typeof p[4]==="object"&&Array.isArray(p[4].targets)&&p[4].targets.every(t=>typeof t==="string")&&(p[4].phi===null||(Number.isInteger(p[4].phi)&&p[4].phi>=0))&&typeof p[4].crop==="string"&&typeof p[4].source==="string"&&typeof p[4].confirmed==="boolean")))&&new Set(value.map(p=>p[0])).size===value.length;}
-function clearCatalogForm(){resetLookupSelection();catalogEditingName=null;catalogOriginalRow=null;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();for(const id of ["catalogName","catalogGroup","catalogCrop","catalogTargets","catalogPhi","catalogSource"])document.getElementById(id).value="";document.getElementById("catalogName").disabled=false;document.getElementById("catalogConfirmed").checked=false;document.getElementById("catalogHeading").textContent="農薬を追加";}
-function editPesticide(index){resetLookupSelection();const p=master[index],m=p[4]||{};catalogEditingName=p[0];catalogOriginalRow=BoujoSync.clone(p);for(const f of extraFields)document.getElementById("catalog"+f).value=m.details?.[f]||"";document.getElementById("catalogName").value=p[0];document.getElementById("catalogName").disabled=false;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();document.getElementById("catalogCategory").value=p[1];for(const [id,value] of [["catalogGroup",p[2]],["catalogCrop",m.crop],["catalogTargets",m.targets?.join("、")],["catalogPhi",m.phi],["catalogSource",m.source]])document.getElementById(id).value=value??"";document.getElementById("catalogConfirmed").checked=!!m.confirmed;document.getElementById("catalogHeading").textContent="農薬の登録情報を編集";document.getElementById("catalogHeading").scrollIntoView({block:"center"});}
+function validCondition(c){return !!c&&typeof c==='object'&&!Array.isArray(c)&&typeof c.crop==='string'&&Array.isArray(c.targets)&&c.targets.every(t=>typeof t==='string')&&(c.phi===null||(Number.isInteger(c.phi)&&c.phi>=0))&&typeof c.source==='string'&&typeof c.confirmed==='boolean'&&(c.details===undefined||(c.details&&typeof c.details==='object'&&!Array.isArray(c.details)&&Object.values(c.details).every(v=>typeof v==='string')));}
+function conditionsFor(meta){
+ if(!meta)return [];
+ if(Array.isArray(meta.conditions))return meta.conditions.map(c=>BoujoSync.clone(c));
+ if(!meta.crop&&!meta.targets?.length&&meta.phi==null&&!meta.source)return [];
+ const c=BoujoSync.clone(meta);delete c.conditions;c.id='legacy-condition';return [c];
+}
+function makeConditionMeta(conditions,base={}){const first=conditions[0]||{crop:'',targets:[],phi:null,source:'',confirmed:false,details:base.details||{}};return {...BoujoSync.clone(first),conditions:BoujoSync.clone(conditions)};}
+function conditionSignature(c){return JSON.stringify({crop:c.crop,targets:[...c.targets].sort(),phi:c.phi,details:Object.fromEntries(['Number','Timing','Dilution','Volume','Method','MaxUses','TotalUses','Restrictions'].map(f=>[f,c.details?.[f]||'']))});}
+function conditionCaption(c){return [c.crop||'作物未選択',c.targets?.join('・')||'対象未選択',c.details?.Method||'方法未入力',Number.isInteger(c.phi)?`収穫${c.phi}日前まで`:'収穫前日数未入力',c.details?.Dilution].filter(Boolean).join('｜');}
+function readConditionEditor(){const value=id=>document.getElementById(id).value.trim(),raw=value('catalogPhi');return {id:conditionEditingId||crypto.randomUUID(),crop:value('catalogCrop'),targets:value('catalogTargets').split(/[、,\n]/).map(t=>t.trim()).filter(Boolean),phi:raw===''?null:Number(raw),source:value('catalogSource'),confirmed:document.getElementById('catalogConfirmed').checked,details:Object.fromEntries(extraFields.map(f=>[f,document.getElementById('catalog'+f).value]))};}
+function hasConditionEditor(){return ['catalogCrop','catalogTargets','catalogPhi','catalogSource'].some(id=>document.getElementById(id).value.trim());}
+function clearConditionEditor(){conditionEditingId=null;for(const id of ['catalogCrop','catalogTargets','catalogPhi','catalogSource',...extraFields.slice(4).map(f=>'catalog'+f)])document.getElementById(id).value='';document.getElementById('catalogConfirmed').checked=false;const select=document.getElementById('lookupUseSelect');if(select)select.value='';updateConditionButton();}
+function loadConditionEditor(id){const c=catalogConditions.find(x=>x.id===id);if(!c)return;conditionEditingId=id;for(const [f,v] of Object.entries({Crop:c.crop,Targets:c.targets.join('、'),Phi:c.phi??'',Source:c.source,...Object.fromEntries(extraFields.map(f=>[f,c.details?.[f]||'']))}))document.getElementById('catalog'+f).value=v;document.getElementById('catalogConfirmed').checked=c.confirmed;updateConditionButton();}
+function updateConditionButton(){document.getElementById('addCondition').textContent=conditionEditingId?'この使用条件の変更を反映':'この使用条件を追加';}
+function initConditionDraft(meta){catalogConditions=conditionsFor(meta);conditionEditingId=null;if(catalogConditions.length)loadConditionEditor(catalogConditions[0].id);else clearConditionEditor();renderConditionDraft();}
+function stageCurrentCondition(){
+ if(!hasConditionEditor())return;
+ const c=readConditionEditor();if(!validCondition(c))throw Error('収穫前日数は0以上の整数で入力してください');const missing=catalogCompleteness(c);if(c.confirmed&&missing)throw Error(missing);
+ const differentNumber=catalogConditions.find(x=>x.details?.Number&&c.details.Number&&x.details.Number!==c.details.Number);if(differentNumber)throw Error('異なる登録番号の使用条件は同じ農薬にまとめられません');
+ const existing=catalogConditions.find(x=>conditionSignature(x)===conditionSignature(c)&&x.id!==conditionEditingId);
+ if(existing){if(conditionEditingId)throw Error('同じ使用条件がすでにあります。対象・方法などを確認してください');loadConditionEditor(existing.id);return;}
+ const i=catalogConditions.findIndex(x=>x.id===conditionEditingId);if(i>=0)catalogConditions[i]=c;else{if(catalogConditions.length>=1000)throw Error('使用条件は1剤につき1000件まで保存できます');catalogConditions.push(c);}conditionEditingId=c.id;updateConditionButton();renderConditionDraft();
+}
+function renderConditionDraft(){
+ const out=document.getElementById('conditionDraftList');document.getElementById('conditionDraftCount').textContent=`保存候補：${catalogConditions.length}件（「農薬を保存」で確定）`;
+ out.innerHTML=catalogConditions.length?catalogConditions.map((c,i)=>`<div class="card" style="box-shadow:none"><b>条件${i+1}</b> ${esc(conditionCaption(c))}<p class="muted">${c.confirmed?'内容を確認済み':'使用条件の確認待ち'}</p>${!catalogCompleteness(c)?`<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" data-draft-confirm="${esc(c.id)}" ${c.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>この条件が水耕小ネギの予定する使用に適合することを確認し、日数判定に使う</span></label>`:`<p class="muted">${esc(catalogCompleteness(c))}</p>`}<button type="button" class="secondary" data-draft-edit="${esc(c.id)}">この条件を編集</button> <button type="button" class="secondary" data-draft-remove="${esc(c.id)}">この条件を外す</button></div>`).join(''):'まだ使用条件がありません。公式の候補から使用条件を選び、下の「この使用条件を追加」を押してください。';
+ out.querySelectorAll('[data-draft-edit]').forEach(b=>b.onclick=()=>loadConditionEditor(b.dataset.draftEdit));
+ out.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{catalogConditions=catalogConditions.filter(c=>c.id!==b.dataset.draftRemove);if(conditionEditingId===b.dataset.draftRemove)clearConditionEditor();renderConditionDraft();});
+ out.querySelectorAll('[data-draft-confirm]').forEach(b=>b.onchange=()=>{const c=catalogConditions.find(x=>x.id===b.dataset.draftConfirm);c.confirmed=b.checked;if(c.id===conditionEditingId)document.getElementById('catalogConfirmed').checked=b.checked;});
+}
+document.getElementById('addCondition').onclick=()=>{try{if(!hasConditionEditor())throw Error('使用条件を選択または入力してください');stageCurrentCondition();document.getElementById('catalogMessage').textContent='保存候補に反映しました。別の条件も選んで追加でき、最後に「農薬を保存」で確定します。';}catch(e){alert(e.message);}};
+document.getElementById('newCondition').onclick=()=>{clearConditionEditor();document.getElementById('catalogCrop').focus();};
+function conditionDetails(c){const d=c.details||{};return [['登録番号',d.Number],['有効成分',d.Ingredients],['登録を有する者',d.Company],['剤型',d.Form],['登録作物',c.crop],['対象',c.targets?.join('、')],['収穫前日数',Number.isInteger(c.phi)?`${c.phi}日`:null],['使用時期',d.Timing],['希釈倍数・使用量',d.Dilution],['散布液量',d.Volume],['使用方法・適用場所',d.Method],['本剤の使用回数',d.MaxUses],['成分の総使用回数',d.TotalUses],['その他の使用条件',d.Restrictions],['出典',c.source]].filter(r=>r[1]!==undefined&&r[1]!==null&&r[1]!=='');}
+function conditionReason(c,target,days){const missing=catalogCompleteness(c);if(missing)return '使用条件の入力待ち：'+missing;if(!c.confirmed)return '使用条件の確認待ち';if(!c.targets.includes(target))return '対象害虫・病害が登録対象と一致しません';if(c.phi>days)return `収穫${c.phi}日前までのため日数不足`;return '';}
+function eligibleConditions(p,target,days){return conditionsFor(p[4]).filter(c=>!conditionReason(c,target,days));}
+
+function validCatalog(value){return Array.isArray(value)&&value.every(p=>Array.isArray(p)&&p.length>=4&&p.slice(0,4).every(v=>typeof v==="string")&&["殺虫剤","殺菌剤","その他"].includes(p[1])&&(!p[4]||(validCondition(p[4])&&(p[4].conditions===undefined||(Array.isArray(p[4].conditions)&&p[4].conditions.length<=1000&&p[4].conditions.every(c=>validCondition(c)&&typeof c.id==="string"&&c.id.length>0)&&new Set(p[4].conditions.map(c=>c.id)).size===p[4].conditions.length)))))&&new Set(value.map(p=>p[0])).size===value.length;}
+function clearCatalogForm(){catalogConditions=[];conditionEditingId=null;renderConditionDraft();updateConditionButton();resetLookupSelection();catalogEditingName=null;catalogOriginalRow=null;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();for(const id of ["catalogName","catalogGroup","catalogCrop","catalogTargets","catalogPhi","catalogSource"])document.getElementById(id).value="";document.getElementById("catalogName").disabled=false;document.getElementById("catalogConfirmed").checked=false;document.getElementById("catalogHeading").textContent="農薬を追加";}
+function editPesticide(index){resetLookupSelection();const p=master[index],m=p[4]||{};catalogEditingName=p[0];catalogOriginalRow=BoujoSync.clone(p);for(const f of extraFields)document.getElementById("catalog"+f).value=m.details?.[f]||"";document.getElementById("catalogName").value=p[0];document.getElementById("catalogName").disabled=false;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();document.getElementById("catalogCategory").value=p[1];for(const [id,value] of [["catalogGroup",p[2]],["catalogCrop",m.crop],["catalogTargets",m.targets?.join("、")],["catalogPhi",m.phi],["catalogSource",m.source]])document.getElementById(id).value=value??"";document.getElementById("catalogConfirmed").checked=!!m.confirmed;document.getElementById("catalogHeading").textContent="農薬の登録情報を編集";initConditionDraft(m);document.getElementById("catalogHeading").scrollIntoView({block:"center"});}
 document.getElementById("cancelPesticide").onclick=clearCatalogForm;
 document.getElementById("savePesticide").onclick=()=>{
- const val=id=>document.getElementById(id).value.trim(),name=val("catalogName"),raw=val("catalogPhi"),phi=raw===""?null:Number(raw);
- const meta={crop:val("catalogCrop"),targets:val("catalogTargets").split(/[、,\n]/).map(t=>t.trim()).filter(Boolean),phi,source:val("catalogSource"),confirmed:document.getElementById("catalogConfirmed").checked,details:Object.fromEntries(extraFields.map(f=>[f,document.getElementById("catalog"+f).value]))};
+ const val=id=>document.getElementById(id).value.trim(),name=val("catalogName");
+ let meta;try{stageCurrentCondition();const all=BoujoSync.clone(catalogConditions);for(const c of all){if(c.confirmed&&catalogCompleteness(c))throw Error(catalogCompleteness(c));}meta=makeConditionMeta(all,{details:Object.fromEntries(extraFields.map(f=>[f,document.getElementById("catalog"+f).value]))});}catch(e){alert(e.message);return;}
  if(!name){alert("農薬名を入力してください");return;}
- if(phi!==null&&(!Number.isInteger(phi)||phi<0)){alert("収穫前日数は0以上の整数で入力してください");return;}
- if(meta.confirmed&&(!meta.crop||!meta.targets.length||phi===null||!meta.source)){alert("確認済みにするには作物名・対象・収穫前日数・出典と確認日を入力してください");return;}
  if(master.some(p=>normName(p[0])===normName(name)&&p[0]!==catalogEditingName)){alert("同じ名前の農薬が登録済みです。一覧の編集を使ってください");return;}
- if(lookupProduct&&!lookupUse&&meta.confirmed){alert("登録作物・対象・使用方法を選択してください");return;}
  const row=[name,val("catalogCategory"),val("catalogGroup")||"不明","ユーザー登録",meta],next=master.map(p=>p.slice()),i=next.findIndex(p=>p[0]===catalogEditingName);
  if(i>=0)next[i]=row;else next.push(row);
  const oldName=catalogEditingName,renaming=!!oldName&&oldName!==name,changeHistory=renaming&&document.getElementById("catalogRenameHistory").checked;
@@ -201,6 +239,7 @@ function deletePesticide(index){const p=master[index];if(!confirm(`「${p[0]}」
 let records=JSON.parse(localStorage.getItem(key)||"null")||seedRecords.map((r,i)=>[...r,null,null,"seed-"+i]);
 records=records.map((r,i)=>r.length>6&&r[6]?r:[...r.slice(0,6),"legacy-"+i]);
 let editingIndex=null,editingOriginalRecord=null;
+const registerConditionChoices=new Map();
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function showTab(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));render();}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
@@ -217,28 +256,25 @@ function catalogCompleteness(m){
  return '';
 }
 function catalogState(p){
- const m=p[4],imported=!!m?.details?.Number;
- if(!m)return {label:'使用条件が未登録',help:'公式データの候補から、この農薬で使う対象・使用方法を選択してください。',ready:false};
- const missing=catalogCompleteness(m);
- if(missing)return {label:imported?'基本情報取込済み・使用条件の入力待ち':'登録情報の入力途中',help:missing,ready:false};
- if(!m.confirmed)return {label:imported?'取込済み・使用条件の確認待ち':'入力済み・使用条件の確認待ち',help:'下の「登録内容と使用条件」を開き、内容を確認すると日数判定に使えます。',ready:true};
- return {label:imported?'取込済み・日数判定に使用中':'入力済み・日数判定に使用中',help:'日数条件の候補判定に使用します。',ready:true};
+ const conditions=conditionsFor(p[4]),ready=conditions.filter(c=>!catalogCompleteness(c)),confirmed=ready.filter(c=>c.confirmed),imported=!!p[4]?.details?.Number;
+ if(!conditions.length)return {label:imported?'基本情報取込済み・使用条件の入力待ち':'使用条件が未登録',help:'使用条件を選んで取り込んでください。',ready:false};
+ if(conditions.length===1){const c=conditions[0],missing=catalogCompleteness(c);if(missing)return {label:imported?'基本情報取込済み・使用条件の入力待ち':'登録情報の入力途中',help:missing,ready:false};return {label:imported?(c.confirmed?'取込済み・日数判定に使用中':'取込済み・使用条件の確認待ち'):(c.confirmed?'入力済み・日数判定に使用中':'入力済み・使用条件の確認待ち'),help:'下で条件の詳細を確認できます。',ready:true};}
+ return {label:`使用条件${conditions.length}件を保存・${confirmed.length}件を日数判定に使用中`,help:'作物・対象・使用方法・収穫前日数は、条件ごとに判定します。',ready:ready.length>0};
 }
 function catalogCard(p,i){
- const m=p[4]||{},s=catalogState(p),d=m.details||{};
- const rows=[['登録番号',d.Number],['有効成分',d.Ingredients],['登録を有する者',d.Company],['剤型',d.Form],['登録作物',m.crop],['登録対象',m.targets?.join('、')],['収穫前日数',Number.isInteger(m.phi)?`${m.phi}日`:null],['使用時期',d.Timing],['希釈倍数・使用量',d.Dilution],['散布液量',d.Volume],['使用方法・適用場所',d.Method],['本剤の使用回数',d.MaxUses],['成分の総使用回数',d.TotalUses],['その他の使用条件',d.Restrictions],['出典・データ反映日',m.source]].filter(r=>r[1]!==undefined&&r[1]!==null&&r[1]!=='');
- return `<div class="card"><b>${esc(p[0])}</b><br><span class="badge">${esc(p[1])}</span> <span class="badge">${esc(p[2])}</span><p class="${m.confirmed&&s.ready?'ok':'muted'}"><b>${esc(s.label)}</b></p>${m.crop?`<p>登録作物：${esc(m.crop)}｜対象：${(m.targets||[]).map(esc).join('、')||'未選択'}${Number.isInteger(m.phi)?`｜収穫${m.phi}日前まで`:''}</p>`:''}<p class="muted">${esc(s.help)}</p>
- ${rows.length?`<details><summary>登録内容と使用条件を確認</summary><dl>${rows.map(([k,v])=>`<dt style="font-weight:700;margin-top:10px">${esc(k)}</dt><dd style="margin:3px 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(v)}</dd>`).join('')}</dl>${s.ready?`<label style="display:flex;align-items:flex-start;gap:8px"><input type="checkbox" data-catalog-confirm="${i}" ${m.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>表示した作物・対象・使用方法が水耕小ネギで予定する使用に適合することを確認し、日数判定に使う</span></label>`:''}</details>`:''}
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">${!m.confirmed?`<button type="button" class="secondary" data-load-pesticide="${i}">${s.ready?'使用条件を変更':'使用条件を選んで取り込む'}</button>`:''}<button type="button" class="secondary" data-edit-pesticide="${i}">編集</button><button type="button" class="secondary" data-delete-pesticide="${i}">削除</button></div></div>`;
+ const s=catalogState(p),conditions=conditionsFor(p[4]);
+ return `<div class="card"><b>${esc(p[0])}</b><br><span class="badge">${esc(p[1])}</span> <span class="badge">${esc(p[2])}</span><p class="muted"><b>${esc(s.label)}</b></p><p class="muted">${esc(s.help)}</p>`+
+ conditions.map((c,n)=>`<details style="margin:10px 0"><summary>条件${n+1}：${esc(conditionCaption(c))}【${c.confirmed&&!catalogCompleteness(c)?'日数判定に使用中':'確認待ち'}】</summary><dl>${conditionDetails(c).map(([k,v])=>`<dt style="font-weight:700;margin-top:10px">${esc(k)}</dt><dd style="margin:3px 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(v)}</dd>`).join('')}</dl>${!catalogCompleteness(c)?`<label style="display:flex;align-items:flex-start;gap:8px"><input type="checkbox" data-catalog-confirm="${i}" data-condition-id="${esc(c.id)}" ${c.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>この条件が水耕小ネギで予定する使用に適合することを確認し、日数判定に使う</span></label>`:`<p class="muted">${esc(catalogCompleteness(c))}</p>`}<button type="button" class="secondary" data-condition-drug="${i}" data-condition-edit="${esc(c.id)}">この条件を編集</button></details>`).join('')+
+ `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="secondary" data-load-pesticide="${i}">使用条件を選んで追加</button><button type="button" class="secondary" data-edit-pesticide="${i}">編集</button><button type="button" class="secondary" data-delete-pesticide="${i}">農薬を削除</button></div></div>`;
 }
-function setCatalogConfirmation(index,checked){
- const p=master[index];if(!p)return;
- const missing=catalogCompleteness(p[4]);if(checked&&missing){alert(missing);render();return;}
- const next=master.map((row,i)=>i===index?[...row.slice(0,4),{...row[4],confirmed:checked}]:row);
+function setCatalogConfirmation(index,checked,conditionId){
+ const p=master[index];if(!p)return;const conditions=conditionsFor(p[4]),selected=conditions.find(c=>c.id===(conditionId||conditions[0]?.id));if(!selected)return;
+ const missing=catalogCompleteness(selected);if(checked&&missing){alert(missing);render();return;}selected.confirmed=checked;
+ const next=master.map((row,i)=>i===index?[...row.slice(0,4),makeConditionMeta(conditions,row[4])]:row);
  try{commitSharedUI({catalog:next});}catch(e){alert('保存できません：'+e.message);render();return;}
- document.getElementById('adviceResult').innerHTML='';render();
- document.getElementById('catalogMessage').textContent=p[0]+(checked?'：日数判定に使用する設定を保存しました。':'：日数判定の使用を解除しました。');
+ document.getElementById('adviceResult').innerHTML='';render();document.getElementById('catalogMessage').textContent=p[0]+'の選択した使用条件：'+(checked?'日数判定に使用する設定を保存しました。':'日数判定の使用を解除しました。');
 }
+
 function loadCatalogDetails(index){
  editPesticide(index);lookupSearch();
  const buttons=document.querySelectorAll('[data-lookup]');
@@ -257,21 +293,22 @@ function render() {
  document.getElementById("pesticideChoices").innerHTML=groups.map(g=>{const available=master.slice();if(editingIndex!==null){const r=records[editingIndex];if(r&&!available.some(p=>p[0]===r[1]))available.push([r[1],r[2],r[3],"一覧から削除済み"]);}const items=available.filter(p=>p[1]===g);return items.length?`<div class="card"><b>${g}</b>${items.map(p=>`<label style="display:flex;align-items:center;gap:9px;font-weight:500;margin:9px 0"><input class="pesticide-check" type="checkbox" value="${esc(p[0])}" style="width:20px;height:20px;flex:0 0 auto"> <span>${esc(p[0])} <span class="muted">(${esc(p[2])})</span></span></label>`).join("")}</div>`:""}).join("");
  document.querySelectorAll(".pesticide-check").forEach(el=>el.onchange=updateAutoTargets);
  document.querySelectorAll(".pesticide-check").forEach(el=>el.checked=selected.has(el.value));
- document.getElementById("registeredTargets").innerHTML=[...new Set(master.flatMap(p=>p[4]?.targets||[]))].map(t=>`<option value="${esc(t)}"></option>`).join("");
+ document.getElementById("registeredTargets").innerHTML=[...new Set(master.flatMap(p=>conditionsFor(p[4]).flatMap(c=>c.targets)))].map(t=>`<option value="${esc(t)}"></option>`).join("");
  document.getElementById("pesticideList").innerHTML=master.map(catalogCard).join("");
  document.querySelectorAll("[data-edit-pesticide]").forEach(b=>b.onclick=()=>editPesticide(Number(b.dataset.editPesticide)));
  document.querySelectorAll("[data-delete-pesticide]").forEach(b=>b.onclick=()=>deletePesticide(Number(b.dataset.deletePesticide)));
  document.querySelectorAll("[data-load-pesticide]").forEach(b=>b.onclick=()=>loadCatalogDetails(Number(b.dataset.loadPesticide)));
- document.querySelectorAll("[data-catalog-confirm]").forEach(b=>b.onchange=()=>setCatalogConfirmation(Number(b.dataset.catalogConfirm),b.checked));
+ document.querySelectorAll("[data-condition-edit]").forEach(b=>b.onclick=()=>{editPesticide(Number(b.dataset.conditionDrug));loadConditionEditor(b.dataset.conditionEdit);});
+ document.querySelectorAll("[data-catalog-confirm]").forEach(b=>b.onchange=()=>setCatalogConfirmation(Number(b.dataset.catalogConfirm),b.checked,b.dataset.conditionId));
 }
 
 const targetDefaults={
  "ベネビアOD":"ネギアザミウマ（登録内容を確認）","ベストガード水溶剤":"ネギアザミウマ（登録内容を確認）","ディアナSC":"ネギアザミウマ（登録内容を確認）","ウララDF":"アブラムシ類など（登録内容を確認）","シスルモード":"ネギアザミウマ（登録内容を確認）","プレオフロアブル":"ネギアザミウマ（登録内容を確認）","ダントツ水溶剤":"ネギアザミウマ（登録内容を確認）","アグリメック":"アザミウマ類・ハダニ類など（登録内容を確認）","ファインセーブフロアブル":"アザミウマ類など（登録内容を確認）","コルト顆粒水和剤":"アブラムシ類など（登録内容を確認）","スピノエース顆粒水和剤":"ネギアザミウマ（登録内容を確認）","アニキ乳剤":"アザミウマ類など（登録内容を確認）","ダブルシューターSE":"アザミウマ類など（登録内容を確認）","ヨーバルフロアブル":"チョウ目害虫など（登録内容を確認）","グレーシア":"ネギアザミウマ（登録内容を確認）","パダンSG水溶剤":"ネギアザミウマなど（登録内容を確認）",
  "ランマンフロアブル":"病害（対象病害・登録内容を確認）","レーバスフロアブル":"病害（対象病害・登録内容を確認）","アリエッティ水和剤":"病害（対象病害・登録内容を確認）","セイビアーフロアブル20":"病害（対象病害・登録内容を確認）","アミスターフロアブル20":"病害（対象病害・登録内容を確認）","アフェットフロアブル":"病害（対象病害・登録内容を確認）","メジャーフロアブル":"病害（対象病害・登録内容を確認）","ピシロックフロアブル":"病害（対象病害・登録内容を確認）","バイオキーパー":"対象病害・使用方法を確認","マスターピース":"対象・用途を確認","バリダシン液剤5":"対象病害・使用方法・登録内容を確認"
 };
-function updateAutoTargets(){const names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value);const vals=names.map(n=>`${n}：${master.find(p=>p[0]===n)?.[4]?.targets?.join("、")||targetDefaults[n]||"対象害虫・病害はラベルで確認"}`);document.getElementById("target").value=vals.join("\n");}
-function prefill(name,target){clearEditMode();showTab("register");document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===name);updateAutoTargets();if(target)document.getElementById("target").value=target;document.getElementById("date").value=document.getElementById("plannedSpray").value||localToday();}
-function clearEditMode(){editingIndex=null;editingOriginalRecord=null;document.getElementById("save").textContent="散布を登録する";document.getElementById("deleteRecord").classList.add("hidden");document.getElementById("cancelEdit").classList.add("hidden");document.getElementById("saved").innerHTML="";document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false);document.getElementById("target").value="";document.getElementById("memo").value="";}
+function updateAutoTargets(){const names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value);document.getElementById("target").value=names.map(n=>{const c=registerConditionChoices.get(n);return `${n}：${c?conditionRecordText(c):[...new Set(conditionsFor(master.find(p=>p[0]===n)?.[4]).flatMap(c=>c.targets))].join("、")||targetDefaults[n]||"対象害虫・病害はラベルで確認"}`;}).join("\n");}
+function prefill(name,target,condition){clearEditMode();showTab("register");document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===name);if(condition)registerConditionChoices.set(name,BoujoSync.clone(condition));updateAutoTargets();if(target&&!condition)document.getElementById("target").value=target;document.getElementById("date").value=document.getElementById("plannedSpray").value||localToday();}
+function clearEditMode(){registerConditionChoices.clear();editingIndex=null;editingOriginalRecord=null;document.getElementById("save").textContent="散布を登録する";document.getElementById("deleteRecord").classList.add("hidden");document.getElementById("cancelEdit").classList.add("hidden");document.getElementById("saved").innerHTML="";document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false);document.getElementById("target").value="";document.getElementById("memo").value="";}
 function editRecord(index){const r=records[index];if(!r)return;editingIndex=index;editingOriginalRecord=BoujoSync.clone(r);showTab("register");document.getElementById("date").value=r[0];document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===r[1]);document.getElementById("target").value=r[4]||targetDefaults[r[1]]||"";document.getElementById("memo").value=r[5]||"";document.getElementById("save").textContent="修正を保存する";document.getElementById("deleteRecord").classList.remove("hidden");document.getElementById("cancelEdit").classList.remove("hidden");document.getElementById("saved").innerHTML=`<div class="success">編集中：${esc(r[0])}｜${esc(r[1])}<br>修正を保存すると既存記録を上書きします。</div>`;}
 window.editRecord=editRecord;
 document.getElementById('save').onclick=()=>{
@@ -294,19 +331,24 @@ document.getElementById('deleteRecord').onclick=()=>{
 document.getElementById('cancelEdit').onclick=()=>{clearEditMode();render();showTab('home');};
 
 function dateInterval(spray,harvest){if(!spray||!harvest)return null;const a=Date.parse(spray+"T00:00:00Z"),b=Date.parse(harvest+"T00:00:00Z");return Number.isFinite(a)&&Number.isFinite(b)?(b-a)/86400000:null;}
-function adviceReason(p,target,days){const m=p[4],missing=catalogCompleteness(m);if(missing)return "使用条件の入力待ち："+missing;if(!m.confirmed)return "使用条件の確認待ち：農薬一覧で内容を確認してください";if(!m.targets.includes(target))return "対象害虫・病害が登録対象と一致しません";if(m.phi>days)return `収穫${m.phi}日前までのため日数不足`;return "";}
+function adviceReason(p,target,days){const all=conditionsFor(p[4]);if(!all.length)return '使用条件が未登録です';if(eligibleConditions(p,target,days).length)return '';return [...new Set(all.map(c=>conditionReason(c,target,days)))].join('／');}
 function showAdvice(){
- const target=document.getElementById("adviceTarget").value.trim(),spray=document.getElementById("plannedSpray").value,harvest=document.getElementById("harvest").value,days=dateInterval(spray,harvest),out=document.getElementById("adviceResult");
+ const target=document.getElementById('adviceTarget').value.trim(),spray=document.getElementById('plannedSpray').value,harvest=document.getElementById('harvest').value,days=dateInterval(spray,harvest),out=document.getElementById('adviceResult');
  if(days===null||days<0||!target){out.innerHTML='<div class="warn">散布予定日・収穫予定日・対象を入力してください。収穫予定日は散布予定日以降にしてください。</div>';return;}
- const recent=records.filter(r=>r[0]<=spray&&r[2]==="殺虫剤").sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8),groups=[...new Set(recent.flatMap(r=>String(r[3]).split("+").map(g=>g.trim())))];
- const eligible=master.filter(p=>!adviceReason(p,target,days)).map(p=>({p,same:p[1]==="殺虫剤"&&p[2].split("+").some(g=>groups.includes(g.trim()))})).sort((a,b)=>Number(a.same)-Number(b.same));
- out.innerHTML=`<div class="card"><b>${esc(spray)}散布 → ${esc(harvest)}収穫：${days}日間</b><p class="muted">入力・確認した登録情報に基づく日数条件の候補です。使用回数・成分総使用回数・希釈倍数などは別途確認してください。</p></div>`+eligible.map(({p,same},i)=>`<div class="candidate"><b>${esc(p[0])}</b> <span class="badge">${esc(p[2])}</span><p>収穫${p[4].phi}日前まで：日数条件を満たします</p>${same?'<div class="warn">連用注意：直近の殺虫剤に同じ系統があります。</div>':""}<p class="muted">登録作物：${esc(p[4].crop)}｜対象：${esc(target)}<br>確認情報：${esc(p[4].source)}</p><button class="secondary" data-advice-index="${i}">散布登録へ（実施後に保存）</button></div>`).join("")+(eligible.length?"":'<div class="warn">確認済みの登録情報で条件に合う農薬がありません。農薬一覧で「登録内容と使用条件を確認」を開くか、「使用条件を選んで取り込む」から進めてください。</div>')+`<div class="card"><h3>候補に含めなかった農薬</h3>${master.filter(p=>adviceReason(p,target,days)).map(p=>`<p>${esc(p[0])}：${esc(adviceReason(p,target,days))}</p>`).join("")||"なし"}</div>`;
- out.querySelectorAll("[data-advice-index]").forEach(b=>b.onclick=()=>prefill(eligible[Number(b.dataset.adviceIndex)].p[0],target));
+ const recent=records.filter(r=>r[0]<=spray&&r[2]==='殺虫剤').sort((a,b)=>b[0].localeCompare(a[0])).slice(0,8),groups=[...new Set(recent.flatMap(r=>String(r[3]).split('+').map(g=>g.trim())))];
+ const eligible=master.flatMap(p=>eligibleConditions(p,target,days).map(c=>({p,c,same:p[1]==='殺虫剤'&&p[2].split('+').some(g=>groups.includes(g.trim()))}))).sort((a,b)=>Number(a.same)-Number(b.same));
+ out.innerHTML=`<div class="card"><b>${esc(spray)}散布 → ${esc(harvest)}収穫：${days}日間</b><p class="muted">保存した使用条件ごとに判定します。同じ農薬でも対象・方法・日数の異なる条件を混ぜません。使用回数・成分総使用回数等は別途確認してください。</p></div>`+
+ eligible.map(({p,c,same},i)=>`<div class="candidate"><b>${esc(p[0])}</b> <span class="badge">${esc(p[2])}</span><p>${esc(conditionCaption(c))}</p><p>日数条件を満たします。</p>${same?'<div class="warn">連用注意：直近の殺虫剤に同じ系統があります。</div>':''}<p class="muted">散布液量：${esc(c.details?.Volume||'未入力')}｜本剤の使用回数：${esc(c.details?.MaxUses||'未入力')}<br>確認情報：${esc(c.source)}</p><button class="secondary" data-advice-index="${i}">この使用条件で散布登録へ（実施後に保存）</button></div>`).join('')+
+ (eligible.length?'':'<div class="warn">確認済みの使用条件で、対象と日数が一致するものがありません。農薬一覧で条件を追加・確認してください。</div>')+
+ `<div class="card"><h3>候補に含めなかった農薬</h3>${master.filter(p=>adviceReason(p,target,days)).map(p=>`<p>${esc(p[0])}：${esc(adviceReason(p,target,days))}</p>`).join('')||'なし'}</div>`;
+ out.querySelectorAll('[data-advice-index]').forEach(b=>b.onclick=()=>{const selected=eligible[Number(b.dataset.adviceIndex)];prefill(selected.p[0],target,selected.c);});
 }
+function conditionRecordText(c){return `登録作物：${c.crop}／対象：${c.targets.join('、')}／使用方法：${c.details?.Method||'未入力'}／希釈倍数・使用量：${c.details?.Dilution||'未入力'}／散布液量：${c.details?.Volume||'未入力'}／使用時期：${c.details?.Timing||'収穫'+c.phi+'日前まで'}／出典：${c.source}`;}
+
 document.getElementById("showAdvice").onclick=showAdvice;
 document.getElementById("plannedSpray").value=localToday();
 for(const id of ["plannedSpray","harvest","adviceTarget"])document.getElementById(id).oninput=()=>{document.getElementById("adviceResult").innerHTML="";};
-document.getElementById("exportBackup").onclick=()=>downloadSharedJSON({app:"nougyounisshi-boujo",version:3,exportedAt:new Date().toISOString(),records,catalog:master,lookup:lookupDB},"防除アドバイザー_全データ_"+localToday()+".json");
+document.getElementById("exportBackup").onclick=()=>downloadSharedJSON({app:"nougyounisshi-boujo",version:4,exportedAt:new Date().toISOString(),records,catalog:master,lookup:lookupDB},"防除アドバイザー_全データ_"+localToday()+".json");
 document.getElementById("importBackup").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  try{const data=JSON.parse(await f.text());if(data.app!=="nougyounisshi-boujo"||!Array.isArray(data.records)||!data.records.every(r=>Array.isArray(r)&&r.length>=4&&r.slice(0,4).every(v=>typeof v==="string")))throw Error("対応するバックアップではありません");if(data.catalog!==undefined&&!validCatalog(data.catalog))throw Error("農薬一覧の形式が不正です");if(data.lookup&&!BoujoSync.validLookup(data.lookup))throw Error("公式検索データが不正です");if(!confirm("このバックアップで現在の保存内容を置き換え、ログイン後はクラウドにも反映します。復元前のバックアップを保存しましたか？"))return;
@@ -387,7 +429,7 @@ document.getElementById('importLookup').onclick=async()=>{
 };
 function phiFromTiming(t){t=t.normalize('NFKC').trim();if(t==='収穫前日まで')return 1;if(t==='収穫当日まで')return 0;const m=t.match(/^収穫(\d+)日前まで$/);return m?Number(m[1]):null;}
 function resetLookupSelection(){lookupProduct=null;lookupUse=null;for(const f of extraFields)document.getElementById('catalog'+f).value='';document.getElementById('lookupResults').innerHTML='';document.getElementById('lookupUses').innerHTML='';}
-function clearImportedUse(){lookupUse=null;for(const f of ['Crop','Targets','Phi','Source',...extraFields.slice(4)])document.getElementById('catalog'+f).value='';document.getElementById('catalogConfirmed').checked=false;}
+function clearImportedUse(){conditionEditingId=null;updateConditionButton();lookupUse=null;for(const f of ['Crop','Targets','Phi','Source',...extraFields.slice(4)])document.getElementById('catalog'+f).value='';document.getElementById('catalogConfirmed').checked=false;}
 function lookupSearch(){
  const q=normName(document.getElementById('catalogName').value),out=document.getElementById('lookupResults');
  if(!lookupDB){out.textContent=q?'上の「公式データの取り込み・更新」から初回データを取り込むと、自動入力できます。':'';return;}
@@ -397,6 +439,7 @@ function lookupSearch(){
  out.querySelectorAll('[data-lookup]').forEach(b=>b.onclick=()=>chooseLookupProduct(hits[Number(b.dataset.lookup)]));
 }
 function chooseLookupProduct(p){
+ if(catalogConditions.some(c=>c.details?.Number&&c.details.Number!==p.id)){document.getElementById('catalogMessage').textContent='登録番号が異なる使用条件は一緒に保存できません。別の農薬なら入力をクリアして追加してください。';return;}
  resetLookupSelection();clearImportedUse();lookupProduct=p;
  document.getElementById('catalogName').value=p.name;updateRenamePreview();
  document.getElementById('catalogCategory').value=p.category==='殺虫剤'?'殺虫剤':p.category==='殺菌剤'?'殺菌剤':'その他';
@@ -410,10 +453,10 @@ function chooseLookupProduct(p){
  if(p.uses.length===1){document.getElementById('lookupUseSelect').value='0';applyLookupUse(p.uses[0]);}
 }
 function applyLookupUse(u){
- lookupUse=u;const phi=phiFromTiming(u.timing);
+ conditionEditingId=null;updateConditionButton();lookupUse=u;const phi=phiFromTiming(u.timing);
  for(const [f,v] of Object.entries({Crop:u.crop,Targets:u.target,Phi:phi??'',Timing:u.timing,Dilution:u.dilution,Volume:u.volume,Method:[u.method,u.place].filter(Boolean).join('／'),MaxUses:u.count,TotalUses:u.total,Restrictions:u.restrictions,Source:`FAMIC 登録反映日${lookupDB.date}／登録番号${lookupProduct.id}／取込日${lookupDB.imported} https://www.acis.famic.go.jp/ddata/index2.htm`}))document.getElementById('catalog'+f).value=v;
  document.getElementById('catalogConfirmed').checked=false;
- document.getElementById('catalogMessage').textContent=phi===null?'使用条件を入力しました。この使用時期は収穫前日数へ自動変換できません。空欄のまま登録情報を確認してください。':'使用条件を自動入力しました。内容を確認してから「農薬を保存」を押してください。';
+ document.getElementById('catalogMessage').textContent=phi===null?'使用条件を入力しました。この使用時期は収穫前日数へ自動変換できません。空欄のまま登録情報を確認してください。':'使用条件を自動入力しました。「この使用条件を追加」で保存候補に残し、別の条件も追加できます。最後に「農薬を保存」を押してください。';
 }
 document.getElementById('catalogName').addEventListener('input',()=>{document.getElementById('catalogConfirmed').checked=false;updateRenamePreview();if(lookupProduct){resetLookupSelection();clearImportedUse();document.getElementById('catalogGroup').value='';}clearTimeout(lookupTimer);lookupTimer=setTimeout(lookupSearch,200);});
 document.getElementById('lookupSearchButton').onclick=lookupSearch;
@@ -432,7 +475,8 @@ function applySharedUI(state,raw){
  records.sort((a,b)=>b[0].localeCompare(a[0]));if(editingId)editingIndex=records.findIndex(r=>r[6]===editingId);
  render();document.getElementById('adviceResult').innerHTML='';if(editingId&&editingIndex<0)document.getElementById('saved').textContent='編集中の記録が別端末で削除されました。編集をキャンセルして内容を確認してください。';
 }
-setTimeout(()=>{if(BoujoSync.adapterVersion!==3)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
+setTimeout(()=>{if(BoujoSync.adapterVersion!==4)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
+renderConditionDraft();
 window.getSharedUI=getSharedUI;window.getLookupUI=getLookupUI;window.applySharedUI=applySharedUI;
 try{BoujoSync.migrateLegacy();}catch(e){document.getElementById('cloudStatus').textContent='以前の未同期データを確認できません：'+e.message;}
 document.getElementById('downloadLocalCopy').onclick=()=>{
@@ -441,7 +485,8 @@ document.getElementById('downloadLocalCopy').onclick=()=>{
 function downloadSharedJSON(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
 </script>
-<script type="module" src="./boujo-cloud-sync.js?v=3-fullsync-20261102" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script></body></html>
+<script type="module" src="./boujo-cloud-sync.js?v=4-multiconditions-20261103" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script></body></html>
+
 
 
 
