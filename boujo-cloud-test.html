@@ -24,7 +24,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <main>
 <section id="home" class="active">
 <div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div>
-<div class="card"><b>全データ同期版 6・使用回数確認</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
+<div class="card"><b>全データ同期版 7・日別セット編集</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
 <div id="cloudConflict" class="card hidden"><h3>ほかの端末の変更と競合しています</h3><p>比較して、この項目にどちらの内容を使うか選択してください。関連する未同期操作にも適用します。</p><pre id="cloudConflictData" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto"></pre><button id="cloudKeepRemote" class="secondary">この項目はクラウドの内容を使う</button> <button id="cloudKeepLocal" class="secondary">この項目は端末の変更を使う</button></div>
 <button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button>
 <h2>ホーム</h2>
@@ -33,7 +33,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <div class="stat"><span class="muted">最新散布</span><b id="latestDate">-</b></div>
 <div class="stat"><span class="muted">記録件数</span><b id="count">-</b></div>
 </div>
-<div class="card"><h3>最新の防除記録</h3><div id="recent"></div></div>
+<div class="card"><h3>日別の防除記録（全履歴）</h3><div id="recent"></div></div>
 <div class="card"><h3>データのバックアップ・復元</h3><p class="muted">共有開始前や復元前にバックアップを保存してください。共有開始後は、同じGoogleアカウントでログインするとほかの端末でも全データを受け取れます。</p><button class="secondary" id="exportBackup" style="width:100%">全データをバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元後はクラウドにも反映します。先に全データのバックアップを保存してください。</p></div>
 <div class="card"><h3>今回の重要ポイント</h3>
 <div class="ok">防除判断から「この農薬を散布した」を押すと、散布登録画面へ農薬・対象害虫が自動入力されます。</div>
@@ -127,6 +127,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <p id="catalogMessage" role="status"></p>
  </div><div id="pesticideList"></div>
 </section>
+<section id="dayEditor"></section>
 </main>
 <script>
 // BEGIN SHARED CORE: durable local edits and conflict-aware cloud patches.
@@ -396,7 +397,9 @@ function render() {
  records.sort((a,b)=>b[0].localeCompare(a[0]));
  document.getElementById("count").textContent=records.length;
  document.getElementById("latestDate").textContent=records[0]?.[0]||"-";
- document.getElementById("recent").innerHTML=records.slice(0,12).map(r=>{const i=records.indexOf(r);return `<button type="button" onclick="editRecord(${i})" style="display:block;width:100%;text-align:left;padding:10px 4px;border:0;border-bottom:1px solid #e5eee8;background:#fff;color:#18352a;font-size:15px"><b>${esc(r[0])}</b>　${esc(r[1])} <span class="badge">${esc(r[3])}</span><div class="muted">${esc(r[2])}　｜タップして編集・削除</div></button>`}).join("");
+ const days=[...new Set(records.map(r=>r[0]))];
+ document.getElementById("recent").innerHTML=days.map(date=>`<details class="card"><summary><b>${esc(date)}</b>｜${records.filter(r=>r[0]===date).length}剤</summary>${records.filter(r=>r[0]===date).map(r=>`<button type="button" onclick="editRecord(${records.indexOf(r)})" class="secondary" style="display:block;width:100%;text-align:left;margin:8px 0">${esc(r[1])} <span class="badge">${esc(r[3])}</span><br>${esc(r[4])}<br><small>${esc(r[5])}｜個別編集</small></button>`).join('')}<button type="button" class="secondary" onclick="editDay(${esc(JSON.stringify(date))})">この日の全記録をまとめて編集</button></details>`).join('');
+
  
  const groups=["殺虫剤","殺菌剤","その他"];
  document.getElementById("pesticideChoices").innerHTML=groups.map(g=>{const available=master.slice();if(editingIndex!==null){const r=records[editingIndex];if(r&&!available.some(p=>p[0]===r[1]))available.push([r[1],r[2],r[3],"一覧から削除済み"]);}const items=available.filter(p=>p[1]===g);return items.length?`<div class="card"><b>${g}</b>${items.map(p=>`<label style="display:flex;align-items:center;gap:9px;font-weight:500;margin:9px 0"><input class="pesticide-check" type="checkbox" value="${esc(p[0])}" style="width:20px;height:20px;flex:0 0 auto"> <span>${esc(p[0])} <span class="muted">(${esc(p[2])})</span></span></label>`).join("")}</div>`:""}).join("");
@@ -420,6 +423,12 @@ const targetDefaults={
 function updateAutoTargets(){const names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value);document.getElementById("target").value=names.map(n=>{const c=registerConditionChoices.get(n);return `${n}：${c?conditionRecordText(c):[...new Set(conditionsFor(master.find(p=>p[0]===n)?.[4]).flatMap(c=>c.targets))].join("、")||targetDefaults[n]||"対象害虫・病害はラベルで確認"}`;}).join("\n");}
 function prefill(name,target,condition){clearEditMode();showTab("register");document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===name);if(condition)registerConditionChoices.set(name,BoujoSync.clone(condition));if(usageReady&&adviceUsageScope())recordScopeDraft=[adviceUsageScope()];updateAutoTargets();if(target&&!condition)document.getElementById("target").value=target;document.getElementById("date").value=document.getElementById("plannedSpray").value||localToday();renderScopeControls();renderUsageChoices();renderUsagePreview();}
 function clearEditMode(){recordScopeDraft=[];if(usageReady){document.getElementById("recordCropName").value="";document.getElementById("recordCropStart").value="";}registerConditionChoices.clear();editingIndex=null;editingOriginalRecord=null;document.getElementById("save").textContent="散布を登録する";document.getElementById("deleteRecord").classList.add("hidden");document.getElementById("cancelEdit").classList.add("hidden");document.getElementById("saved").innerHTML="";document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false);document.getElementById("target").value="";document.getElementById("memo").value="";}
+function editDay(date){
+ const originals=BoujoSync.clone(records.filter(r=>r[0]===date));if(!originals.length)return;
+ const panel=document.getElementById('dayEditor');panel.innerHTML=`<h2>${esc(date)}の散布セットを編集</h2><label>全記録の散布日</label><input id="dayDate" type="date" value="${esc(date)}">${originals.map((r,i)=>`<div class="card"><b>${esc(r[1])}</b> <span class="badge">${esc(r[3])}</span><label>対象害虫・病害</label><textarea data-day-target="${i}">${esc(r[4])}</textarea><label>メモ</label><textarea data-day-memo="${i}">${esc(r[5])}</textarea><label><input type="checkbox" data-day-remove="${i}" style="width:22px">この記録を削除する</label></div>`).join('')}<button class="primary" id="saveDay">このセットの修正を保存</button><button class="secondary" id="cancelDay">キャンセル</button><p id="dayStatus" role="status"></p>`;
+ showTab('dayEditor');document.getElementById('cancelDay').onclick=()=>showTab('home');
+ document.getElementById('saveDay').onclick=()=>{try{const date=document.getElementById('dayDate').value;if(!usageDate(date))throw Error('有効な散布日を指定してください');for(const r of originals)if(!BoujoSync.equal(records.find(x=>x[6]===r[6]),r))throw Error('編集中に記録が変更されました。ホームから開き直してください');const ids=new Set(originals.map(r=>r[6]));const updated=originals.flatMap((r,i)=>{if(panel.querySelector(`[data-day-remove="${i}"]`).checked)return [];if((r[7]?.usage?.scopes||[]).some(x=>x.start>date))throw Error('散布日は作付開始日以降にしてください');const next=BoujoSync.clone(r);next[0]=date;next[4]=panel.querySelector(`[data-day-target="${i}"]`).value;next[5]=panel.querySelector(`[data-day-memo="${i}"]`).value;return [next];});if(updated.length<originals.length&&!confirm('選択した'+(originals.length-updated.length)+'件を削除して保存しますか？'))return;commitSharedUI({records:[...records.filter(r=>!ids.has(r[6])),...updated]});showTab('home');}catch(e){document.getElementById('dayStatus').textContent='保存できません：'+e.message;}};
+}
 function editRecord(index){const r=records[index];if(!r)return;recordScopeDraft=BoujoSync.clone(r[7]?.usage?.scopes||[]);registerConditionChoices.clear();if(r[7]?.usage?.condition)registerConditionChoices.set(r[1],BoujoSync.clone(r[7].usage.condition));editingIndex=index;editingOriginalRecord=BoujoSync.clone(r);showTab("register");document.getElementById("date").value=r[0];document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===r[1]);document.getElementById("target").value=r[4]||targetDefaults[r[1]]||"";document.getElementById("memo").value=r[5]||"";renderScopeControls();renderUsageChoices();renderUsagePreview();document.getElementById("save").textContent="修正を保存する";document.getElementById("deleteRecord").classList.remove("hidden");document.getElementById("cancelEdit").classList.remove("hidden");document.getElementById("saved").innerHTML=`<div class="success">編集中：${esc(r[0])}｜${esc(r[1])}<br>修正を保存すると既存記録を上書きします。</div>`;}
 window.editRecord=editRecord;
 document.getElementById('save').onclick=()=>{
