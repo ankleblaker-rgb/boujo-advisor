@@ -1,5 +1,4 @@
-<!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>防除アドバイザー｜クラウド同期テスト版</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#fff;color:#18352a;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
@@ -15,37 +14,35 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 .candidate{border:1px solid #cfe1d5;padding:12px;margin:8px 0;border-radius:6px}.candidate button{margin-top:8px;width:100%}
 .muted{color:#64766c;font-size:13px}.hidden{display:none!important}.success{background:#eaf8ef;border:1px solid #9bd0ad;padding:12px;border-radius:6px;margin-top:10px}
 @media(min-width:600px){.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}}
-</style></head>
+</style><style>:root{color-scheme:light}body{padding-bottom:calc(88px + env(safe-area-inset-bottom));overflow-wrap:anywhere}header{background:#fff;color:#16834b;border-bottom:1px solid #d8e6de;display:flex;align-items:center;justify-content:space-between;gap:12px;position:static;padding:18px 16px}header h1{font-size:21px}header small{display:block;color:#52695b;opacity:1}#headerSync{font-size:12px;max-width:40%;min-height:44px;flex-shrink:0}#nav{position:fixed;inset:auto 0 0;top:auto;z-index:10;display:flex;border-top:1px solid #d8e6de;background:#fff;padding:8px 10px calc(8px + env(safe-area-inset-bottom));gap:8px}#nav button{flex:1;min-width:0;min-height:48px;font-size:14px;white-space:normal}#nav button.active{background:#edf7f0;color:#126c3e;border-bottom:3px solid #16834b;border-radius:0}.work-home h2{font-size:25px;margin:6px 0 24px}.work-actions{display:grid;gap:14px}.work-action{width:100%;min-height:98px;display:flex;align-items:center;text-align:left;gap:14px;padding:20px 16px;border:1px solid #16834b;background:#fff;color:#18352a;border-radius:4px;font-size:20px;font-weight:700}.work-action>span:nth-child(2){flex:1;min-width:0}.work-action>span:first-child{font-size:28px;flex:none}.work-action small{display:block;font-size:13px;font-weight:400;margin-top:6px}.work-main{background:#16834b;color:#fff}.work-tint{background:#edf8ef}.work-last{margin:24px 0;padding:18px 0;border-block:1px solid #d8e6de}.work-last p{font-size:19px;font-weight:700}input,select,textarea{min-width:0;max-width:100%}.grid>*{min-width:0}button{max-width:100%;overflow-wrap:anywhere}summary{min-height:44px;padding:10px 0}details.card{box-shadow:none}.card{border-radius:4px}#cloudConflict{border:2px solid #d59a24}#workSettings{margin-top:24px}@media(max-width:400px){.grid{grid-template-columns:minmax(0,1fr)}.work-action{font-size:18px;padding:18px 12px;gap:10px}header h1{font-size:18px}main{padding:12px}#headerSync{max-width:36%}}</style><style>.ui-icon{width:28px;height:28px;display:block;flex:none}.app-brand{display:grid;grid-template-columns:30px minmax(0,1fr);column-gap:10px;align-items:center;min-width:0}.app-brand h1{grid-column:2;grid-row:1}.app-brand small{grid-column:2;grid-row:2}.app-brand .brand-icon{grid-column:1;grid-row:1 / 3}#nav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}#nav .ui-icon{width:22px;height:22px}.work-action>span:first-child{width:30px}button:focus-visible,summary:focus-visible{outline:3px solid #8bbc9f;outline-offset:3px}#historyHint:empty{display:none}</style></head>
 <body>
-<header><h1>防除アドバイザー｜クラウドテスト版</h1><small>運用版とは別の保存領域を使用します</small></header>
-<nav id="nav">
-<button data-tab="home" class="active">ホーム</button><button data-tab="register">散布登録</button><button data-tab="advice">防除判断</button><button data-tab="list">農薬一覧</button>
-</nav>
+<header><div class="app-brand"><svg class="ui-icon brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11M12 13C4 14 2 9 3 4c6-1 10 3 9 9zM12 10c0-6 4-8 9-7 0 6-3 9-9 9"></path></svg><h1>防除アドバイザー</h1><small>水耕小ネギ・ハウス全体</small></div><button id="headerSync" class="secondary" type="button">同期状態</button></header>
+<nav id="nav"><button data-tab="home" class="active"><svg class="ui-icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-7 9 7M5 9v12h5v-7h4v7h5V9"></path></svg>ホーム</button><button data-tab="history"><svg class="ui-icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="1"></rect><path d="M9 8h6M9 12h6M9 16h4"></path></svg>履歴</button><button data-tab="list"><svg class="ui-icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h12M9 12h12M9 19h12M3 5h1M3 12h1M3 19h1"></path></svg>農薬一覧</button></nav>
 <main>
-<section id="home" class="active">
-<div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div>
-<div class="card"><b>全データ同期版 9・散布後の効果記録</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
+<section id="home" class="active"><div class="work-home"><p id="workToday" class="muted"></p><h2>何を記録しますか？</h2><div class="work-actions"><button id="workRegister" class="work-action work-main" type="button"><span><svg class="ui-icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h8v12H7zM9 8V5h6l3 2M15 5V3H6v2h3M20 9h1M20 12h1"></path></svg></span><span>散布を記録<small>使った農薬をまとめて登録</small></span><span aria-hidden="true">→</span></button><button id="workAdvice" class="work-action work-tint" type="button"><span><svg class="ui-icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"></rect><path d="M7 3v4M17 3v4M3 10h18M8 14h2M14 14h2M8 18h2"></path></svg></span><span>次の散布を考える<small>予定日・収穫日から確認</small></span><span aria-hidden="true">→</span></button><button id="workObserve" class="work-action" type="button"><span><svg class="ui-icon " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM8 12l3 3 5-6"></path></svg></span><span>散布後の効果を記録<small>効いた・残存ありなどを残す</small></span><span aria-hidden="true">→</span></button></div><div class="work-last"><span class="muted">前回の散布</span><p id="workLatest"></p><button class="secondary" id="workHistory" type="button">履歴を見る →</button></div></div>
+
+
 <div id="cloudConflict" class="card hidden"><h3>ほかの端末の変更と競合しています</h3><p>比較して、この項目にどちらの内容を使うか選択してください。関連する未同期操作にも適用します。</p><pre id="cloudConflictData" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto"></pre><button id="cloudKeepRemote" class="secondary">この項目はクラウドの内容を使う</button> <button id="cloudKeepLocal" class="secondary">この項目は端末の変更を使う</button></div>
-<button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button>
-<h2>ホーム</h2>
-<div class="grid3">
+
+
+
+
+
+
+<p class="muted">全データ同期版 10・作業ボタン優先</p><details id="workSettings" class="card"><summary>同期・バックアップ・設定</summary><div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div><div class="card"><b>全データ同期版 10・作業ボタン優先</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div><div class="card"><h3>データのバックアップ・復元</h3><p class="muted">共有開始前や復元前にバックアップを保存してください。共有開始後は、同じGoogleアカウントでログインするとほかの端末でも全データを受け取れます。</p><button class="secondary" id="exportBackup" style="width:100%">全データをバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元後はクラウドにも反映します。先に全データのバックアップを保存してください。</p></div><button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button><div class="grid3">
 <div class="stat"><span class="muted">栽培</span><b>水耕</b>小ネギ</div>
 <div class="stat"><span class="muted">最新散布</span><b id="latestDate">-</b></div>
 <div class="stat"><span class="muted">記録件数</span><b id="count">-</b></div>
-</div>
-<div class="card"><h3>日別の防除記録（全履歴）</h3><div id="recent"></div></div>
-<div class="card"><h3>データのバックアップ・復元</h3><p class="muted">共有開始前や復元前にバックアップを保存してください。共有開始後は、同じGoogleアカウントでログインするとほかの端末でも全データを受け取れます。</p><button class="secondary" id="exportBackup" style="width:100%">全データをバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元後はクラウドにも反映します。先に全データのバックアップを保存してください。</p></div>
-<div class="card"><h3>今回の重要ポイント</h3>
+</div><div class="card"><h3>今回の重要ポイント</h3>
 <div class="ok">防除判断から「この農薬を散布した」を押すと、散布登録画面へ農薬・対象害虫が自動入力されます。</div>
 <div class="muted">候補として表示されただけでは散布履歴に入りません。実際に散布した場合だけ登録してください。</div>
-</div>
-</section>
+</div></details></section><section id="history"><h2>散布履歴</h2><p id="historyHint" role="status"></p><div class="card"><h3>日別の防除記録（全履歴）</h3><div id="recent"></div></div></section>
 
 <section id="register">
 <h2>散布登録</h2>
 <div class="card">
 <label>散布日</label><input id="date" type="date">
-<div class="card" hidden aria-hidden="true"><h3>今回の対象作付（複数選択可）</h3><p class="muted">選択した全農薬を、対象にした全作付へ使った記録として保存します。範囲が異なる場合は分けて登録してください。開始日は、種子・苗の準備段階を含む集計開始日です。</p><div id="recordSavedScopes"></div><div class="grid"><div><label for="recordCropName">新しい作付名・区画</label><input id="recordCropName" placeholder="例：11月播種・谷下ベンチ"></div><div><label for="recordCropStart">準備・播種等の開始日</label><input type="date" id="recordCropStart"></div></div><button type="button" class="secondary" id="addRecordScope" style="margin-top:8px">対象作付に追加</button><div id="recordScopeDraft"></div></div>
+<div class="card" hidden="" aria-hidden="true"><h3>今回の対象作付（複数選択可）</h3><p class="muted">選択した全農薬を、対象にした全作付へ使った記録として保存します。範囲が異なる場合は分けて登録してください。開始日は、種子・苗の準備段階を含む集計開始日です。</p><div id="recordSavedScopes"></div><div class="grid"><div><label for="recordCropName">新しい作付名・区画</label><input id="recordCropName" placeholder="例：11月播種・谷下ベンチ"></div><div><label for="recordCropStart">準備・播種等の開始日</label><input type="date" id="recordCropStart"></div></div><button type="button" class="secondary" id="addRecordScope" style="margin-top:8px">対象作付に追加</button><div id="recordScopeDraft"></div></div>
 <label>散布した農薬（複数選択可）</label>
 <div class="muted">殺虫剤・殺菌剤など、今回散布した農薬をすべて選択してください。</div>
 <div id="pesticideChoices"></div>
@@ -69,7 +66,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <label>対象害虫・病害</label><input id="adviceTarget" value="ネギアザミウマ" list="registeredTargets"><datalist id="registeredTargets"></datalist>
 <button class="primary" id="showAdvice">候補を表示</button>
 </div>
-<div class="card" hidden aria-hidden="true"><h3>使用回数を確認する作付</h3><select id="adviceSavedScope"><option value="">作付を選択・または下に入力</option></select><div class="grid"><div><label for="adviceCropName">作付名・区画</label><input id="adviceCropName" placeholder="例：11月播種・谷下ベンチ"></div><div><label for="adviceCropStart">準備・播種等の開始日</label><input type="date" id="adviceCropStart"></div></div><p class="muted">同じ作付名と開始日に紐付けた履歴を集計します。種子・購入苗の処理なども含めて記録してください。未指定の場合、回数は判定しません。</p></div>
+<div class="card" hidden="" aria-hidden="true"><h3>使用回数を確認する作付</h3><select id="adviceSavedScope"><option value="">作付を選択・または下に入力</option></select><div class="grid"><div><label for="adviceCropName">作付名・区画</label><input id="adviceCropName" placeholder="例：11月播種・谷下ベンチ"></div><div><label for="adviceCropStart">準備・播種等の開始日</label><input type="date" id="adviceCropStart"></div></div><p class="muted">同じ作付名と開始日に紐付けた履歴を集計します。種子・購入苗の処理なども含めて記録してください。未指定の場合、回数は判定しません。</p></div>
 <p class="muted">ハウス全体の散布履歴から参考件数を自動表示します。作付の入力は不要です。</p><div id="adviceResult"></div>
 </section>
 
@@ -83,7 +80,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <details><summary>公式データの取り込み・更新</summary>
  <p class="muted">FAMICの「登録基本部」「登録適用部一」「登録適用部二」の3つをダウンロードし、まとめて選択してください。ZIPのまま、または展開したCSVを選べます。取り込んだ公式データは、ログイン後に自分専用のクラウドへ保存し、同じアカウントのほかの端末でも検索に使えます。公開サイトには配布しません。</p>
  <p><a href="https://www.acis.famic.go.jp/ddata/index2.htm" target="_blank" rel="noopener noreferrer">FAMICの公式ダウンロードページを開く</a></p>
- <label for="lookupFiles">公式ZIP・CSVを3つ選択</label><input id="lookupFiles" type="file" accept=".zip,.csv" multiple>
+ <label for="lookupFiles">公式ZIP・CSVを3つ選択</label><input id="lookupFiles" type="file" accept=".zip,.csv" multiple="">
  <button class="secondary" type="button" id="importLookup">選択したデータを取り込む</button>
  <p class="muted">更新時も3つのファイルを選択します。保存条件と比較し、差分がある条件は確認待ちに戻します。保存値・過去の散布履歴は自動で上書きしません。1台で取り込むと比較結果もほかの端末へ同期します。</p>
  </details>
@@ -100,10 +97,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <div id="lookupResults" role="status" aria-live="polite"></div>
  <div id="lookupUses"></div>
  <p class="muted">候補を選ぶと基本情報が入り、使用条件を選ぶと登録作物・対象・収穫前日数などが入ります。「この使用条件を追加」を使い、1剤に複数の条件を保存できます。</p>
- <label for="catalogNumber">登録番号</label><input id="catalogNumber" readonly>
- <label for="catalogIngredients">有効成分・濃度</label><input id="catalogIngredients" readonly>
- <label for="catalogCompany">登録を有する者</label><input id="catalogCompany" readonly>
- <label for="catalogForm">剤型</label><input id="catalogForm" readonly>
+ <label for="catalogNumber">登録番号</label><input id="catalogNumber" readonly="">
+ <label for="catalogIngredients">有効成分・濃度</label><input id="catalogIngredients" readonly="">
+ <label for="catalogCompany">登録を有する者</label><input id="catalogCompany" readonly="">
+ <label for="catalogForm">剤型</label><input id="catalogForm" readonly="">
 
  <label for="catalogCategory">分類</label><select id="catalogCategory"><option>殺虫剤</option><option>殺菌剤</option><option>その他</option></select>
  <label for="catalogGroup">系統（例：IRAC 5、FRAC 11）</label><input id="catalogGroup">
@@ -112,14 +109,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <label for="catalogCrop">登録作物名（ラベルの表記）</label><input id="catalogCrop" placeholder="例：ねぎ">
  <label for="catalogTargets">登録対象害虫・病害（カンマ区切り）</label><input id="catalogTargets">
  <label for="catalogPhi">収穫前日数（前日＝1、3日前＝3、当日＝0、未確認は空欄）</label><input id="catalogPhi" type="number" min="0" step="1">
- <label for="catalogTiming">使用時期（登録表の原文）</label><input id="catalogTiming" readonly>
- <label for="catalogDilution">希釈倍数・使用量</label><input id="catalogDilution" readonly>
- <label for="catalogVolume">散布液量</label><input id="catalogVolume" readonly>
- <label for="catalogMethod">使用方法・適用場所</label><input id="catalogMethod" readonly>
- <label for="catalogMaxUses">本剤の使用回数</label><input id="catalogMaxUses" readonly>
- <label for="catalogTotalUses">成分ごとの総使用回数</label><textarea id="catalogTotalUses" readonly></textarea>
+ <label for="catalogTiming">使用時期（登録表の原文）</label><input id="catalogTiming" readonly="">
+ <label for="catalogDilution">希釈倍数・使用量</label><input id="catalogDilution" readonly="">
+ <label for="catalogVolume">散布液量</label><input id="catalogVolume" readonly="">
+ <label for="catalogMethod">使用方法・適用場所</label><input id="catalogMethod" readonly="">
+ <label for="catalogMaxUses">本剤の使用回数</label><input id="catalogMaxUses" readonly="">
+ <label for="catalogTotalUses">成分ごとの総使用回数</label><textarea id="catalogTotalUses" readonly=""></textarea>
 
- <label for="catalogRestrictions">その他の使用条件</label><textarea id="catalogRestrictions" readonly></textarea>
+ <label for="catalogRestrictions">その他の使用条件</label><textarea id="catalogRestrictions" readonly=""></textarea>
  <label for="catalogSource">確認した登録情報・ラベルの出典と確認日</label><input id="catalogSource">
  <label style="display:flex;gap:8px;align-items:center"><input id="catalogConfirmed" type="checkbox" style="width:22px;height:22px">入力した登録情報が水耕小ネギでの予定の使用方法に適合することを確認した</label>
  <button type="button" class="secondary" id="addCondition" style="margin:10px 6px 6px 0">この使用条件を追加</button><button type="button" class="secondary" id="newCondition">新しい条件を入力</button>
@@ -367,7 +364,7 @@ records=records.map((r,i)=>BoujoSync.norm(r.length>6&&r[6]?r:[...r.slice(0,6),"l
 let editingIndex=null,editingOriginalRecord=null;
 const registerConditionChoices=new Map();
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
-function showTab(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));render();}
+function showTab(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===(id==='dayEditor'?'history':['register','advice'].includes(id)?'home':id)));render();}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 function updateRenamePreview(){
  const from=catalogEditingName,to=document.getElementById('catalogName').value.trim(),renaming=!!from&&from!==to,count=records.filter(r=>r[1]===from).length;
@@ -408,11 +405,12 @@ function loadCatalogDetails(index){
  if(buttons.length===1)buttons[0].click();
 }
 
+function renderWorkHome(){document.getElementById('workToday').textContent=localToday();const date=records[0]?.[0];document.getElementById('workLatest').textContent=date?date+'・'+records.filter(r=>r[0]===date).length+'剤':'まだ散布記録がありません';}
 function render() {
  const selected=new Set([...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value));
  records.sort((a,b)=>b[0].localeCompare(a[0]));
  document.getElementById("count").textContent=records.length;
- document.getElementById("latestDate").textContent=records[0]?.[0]||"-";
+ document.getElementById("latestDate").textContent=records[0]?.[0]||"-";renderWorkHome();
  const days=[...new Set(records.map(r=>r[0]))];
  document.getElementById("recent").innerHTML=days.map(date=>`<details class="card"><summary><b>${esc(date)}</b>｜${records.filter(r=>r[0]===date).length}剤</summary>${records.filter(r=>r[0]===date).map(r=>`<button type="button" onclick="editRecord(${records.indexOf(r)})" class="secondary" style="display:block;width:100%;text-align:left;margin:8px 0">${esc(r[1])} <span class="badge">${esc(r[3])}</span><br>${esc(r[4])}<br><small>${esc(r[5])}｜個別編集</small>${effectSummary(r)}</button>`).join('')}<button type="button" class="secondary" onclick="editDay(${esc(JSON.stringify(date))})">効果を記録・この日の全記録をまとめて編集</button></details>`).join('');
 
@@ -614,7 +612,7 @@ function applySharedUI(state,raw){
  records.sort((a,b)=>b[0].localeCompare(a[0]));if(editingId)editingIndex=records.findIndex(r=>r[6]===editingId);
  render();document.getElementById('adviceResult').innerHTML='';if(editingId&&editingIndex<0)document.getElementById('saved').textContent='編集中の記録が別端末で削除されました。編集をキャンセルして内容を確認してください。';
 }
-setTimeout(()=>{if(BoujoSync.adapterVersion!==9)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
+setTimeout(()=>{if(BoujoSync.adapterVersion!==10)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
 renderConditionDraft();
 registrationReviewReady=true;usageReady=true;render();
 window.getSharedUI=getSharedUI;window.getLookupUI=getLookupUI;window.applySharedUI=applySharedUI;
@@ -625,7 +623,7 @@ document.getElementById('downloadLocalCopy').onclick=()=>{
 function downloadSharedJSON(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
 </script>
-<script type="module" src="./boujo-cloud-sync.js?v=9-effects-20261103" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script></body></html>
+<script type="module" src="./boujo-cloud-sync.js?v=10-work-ui-20261103" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script>
 
 
 
@@ -633,3 +631,4 @@ function downloadSharedJSON(data,name){const blob=new Blob([JSON.stringify(data,
 
 
 
+<script>document.getElementById('workRegister').onclick=()=>{showTab('register');};document.getElementById('workAdvice').onclick=()=>showTab('advice');function openWorkHistory(observe){document.getElementById('historyHint').textContent=observe?'効果を記録する散布日を開き、まとめて編集を押してください。':'';showTab('history');}document.getElementById('workObserve').onclick=()=>openWorkHistory(true);document.getElementById('workHistory').onclick=()=>openWorkHistory(false);document.getElementById('headerSync').onclick=()=>{showTab('home');document.getElementById('workSettings').open=true;(document.getElementById('cloudConflict').classList.contains('hidden')?document.getElementById('cloudStatus'):document.getElementById('cloudConflict')).scrollIntoView({block:'center'});};function syncHeader(){const source=document.getElementById('cloudStatus'),button=document.getElementById('headerSync');button.textContent=source.classList.contains('ok')?'同期済み':'同期要確認';button.title=source.textContent;}new MutationObserver(syncHeader).observe(document.getElementById('cloudStatus'),{childList:true,subtree:true,attributes:true});syncHeader();if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{document.body.style.paddingBottom=(document.getElementById('nav').getBoundingClientRect().height+24)+'px';}).observe(document.getElementById('nav'));</script></body></html>
