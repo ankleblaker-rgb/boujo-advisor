@@ -1,0 +1,25 @@
+// Firebase Console > Firestore Database > ルール
+// 既存の match /databases/{database}/documents { ... } の内側に追加。
+// 既存の日誌・防除用のルールは残してください。
+match /shipping_accounts/{userId} {
+  function isOwner() {
+    return request.auth != null
+      && request.auth.uid == userId
+      && request.auth.uid == 'ZSbRiqTgDyVBxKf4SJTN5k1KiQP2';
+  }
+  function validState() {
+    return request.resource.data.keys().hasOnly(['schemaVersion', 'revision', 'recordsJson', 'updatedAt'])
+      && request.resource.data.schemaVersion == 1
+      && request.resource.data.revision is int
+      && request.resource.data.recordsJson is string
+      && request.resource.data.recordsJson.size() <= 850000
+      && request.resource.data.updatedAt == request.time;
+  }
+  allow read: if isOwner();
+  allow create: if isOwner() && validState()
+    && request.resource.data.revision == 1;
+  allow update: if isOwner() && validState()
+    && request.resource.data.revision == resource.data.revision + 1;
+  // 削除は画面上の記録操作で行い、この共有文書そのものは削除しません。
+  allow delete: if false;
+}

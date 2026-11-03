@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {applyWrite,readState,validRecords} from '../sync-core.js';
+const account='test-account';
+const record=(id='one',market='不二')=>({id,batchId:'batch',date:'2026-11-03',harvest:'',crop:'小ネギ',destination:market,boxes:10,price:1500,deductions:0,slip:'',memo:''});
+const stored=s=>({schemaVersion:1,revision:s.revision,recordsJson:JSON.stringify(s.records)});
+test('first save and second device read retain three markets and totals',()=>{const records=[record(),{...record('two','豊島'),boxes:20,price:1600},{...record('three','千住'),boxes:5,price:null}];const next=applyWrite(null,{revision:0,records},account);const phone=readState(stored(next),account);assert.equal(phone.records.length,3);assert.equal(phone.records.reduce((s,r)=>s+r.boxes,0),35);assert.equal(phone.records.reduce((s,r)=>s+r.boxes*(r.price??0),0),47000)});
+test('stale device is rejected; Firebase transaction retries cannot overwrite newer data',()=>{const first=stored(applyWrite(null,{revision:0,records:[record()]},account));const newer=stored(applyWrite(first,{revision:1,records:[{...record(),boxes:12}]},account));assert.throws(()=>applyWrite(newer,{revision:1,records:[{...record(),boxes:99}]},account),e=>e.status===409);assert.equal(readState(newer,account).records[0].boxes,12)});
+test('edit, removal and backup restore replace a batch without double counting',()=>{const state=stored(applyWrite(null,{revision:0,records:[record(),record('two','豊島')]},account));const next=applyWrite(state,{revision:1,records:[{...record(),boxes:12}]},account);assert.equal(next.records.length,1);assert.equal(next.records[0].boxes,12)});
+test('invalid dates, duplicate ids and inconsistent grouped rows are rejected',()=>{assert.equal(validRecords([{...record(),date:'2026-02-31'}]),false);assert.equal(validRecords([record(),record()]),false);assert.equal(validRecords([record(),record('two','不二')]),false);assert.equal(validRecords([{...record(),boxes:0}]),false);assert.throws(()=>readState({schemaVersion:2,revision:1,recordsJson:'[]'},account))});
+test('unrecognized old fields are not written into new cloud state',()=>{const r={...record(),unexpected:'private'};const out=applyWrite(null,{revision:0,records:[r]},account);assert.equal('unexpected' in out.records[0],false)});
