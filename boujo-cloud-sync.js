@@ -4,7 +4,7 @@ import {getFirestore,doc,onSnapshot,runTransaction,getDoc} from 'https://www.gst
 const config={apiKey:'AIzaSyCKSWObv6oueliMX7bRhTTsAy3nS065Zvg',authDomain:'farm-ai-system.firebaseapp.com',projectId:'farm-ai-system',storageBucket:'farm-ai-system.firebasestorage.app',messagingSenderId:'469927403647',appId:'1:469927403647:web:cd05e7ddc50d33ac169f4a'};
 const ADMIN='ZSbRiqTgDyVBxKf4SJTN5k1KiQP2';
 const auth=getAuth(initializeApp(config)),db=getFirestore(),S=window.BoujoSync,$=id=>document.getElementById(id);
-S.adapterVersion=4;
+S.adapterVersion=5;
 let user=null,ref=null,unsubscribe=null,ready=false,busy=false,lastRemote=null,conflict=null,epoch=0,renderVersion=0,migrating=false;
 function status(text,good=false){$('cloudStatus').className=good?'ok':'warn';$('cloudStatus').textContent=text;const n=S.pending().length;$('cloudDetail').textContent=`未同期の変更：${n}件 ／ ${user?'ログイン済み':'未ログイン'}。散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。`;$('cloudRetry').classList.toggle('hidden',!user||!n);}
 function clearConflict(){conflict=null;$('cloudConflict').classList.add('hidden');$('cloudConflictData').textContent='';}
@@ -12,7 +12,7 @@ function showConflict(op,error){conflict={id:op.id};$('cloudConflict').classList
 async function paint(state){const token=++renderVersion;const local=window.getSharedUI();const localRaw=window.getLookupUI();const raw=state.lookup&&localRaw&&local.lookup?.digest===state.lookup.digest?localRaw:await S.unpack(state.lookup);if(token!==renderVersion)return;S.backupOnce();S.accept(state,raw);window.applySharedUI(state,raw);}
 async function receive(snap){const e=epoch;try{
  if(!snap.exists()){ready=false;lastRemote=null;$('cloudImport').classList.remove('hidden');$('cloudImport').textContent='この端末の全データをクラウドへ初回保存';status('クラウドにデータがありません。内容が新しい端末で初回保存してください。');return;}
- const data=snap.data();if((data.minClientVersion||0)>4)throw Error('新しいアプリへの更新が必要です');
+ const data=snap.data();if((data.minClientVersion||0)>5)throw Error('新しいアプリへの更新が必要です');
  lastRemote=S.readCloud(data);if(lastRemote.catalog===null){ready=false;$('cloudImport').classList.remove('hidden');$('cloudImport').textContent='この端末の農薬一覧・公式データを共有開始';S.backupOnce();if(e===epoch)status('農薬情報の初回共有が必要です。内容が新しいパソコンで「共有開始」を押してください。');return;}
  $('cloudImport').classList.add('hidden');ready=true;const state=S.merge(lastRemote);await paint(state);if(e!==epoch)return;if(conflict)return;if(S.pending().length)flush();else status(`全データ同期済み：散布${state.records.length}件・農薬${state.catalog.length}件・公式データ${state.lookup?.date||'未取込'}`,true);
  }catch(error){if(e===epoch){ready=false;status('クラウドを読み込めません：'+error.message+'。端末データは保持しています。');}}
@@ -48,4 +48,5 @@ onAuthStateChanged(auth,u=>{
  if(u.uid!==ADMIN){status('このGoogleアカウントにはアクセス権がありません。保存済みデータは送信しません。');return;}
  user=u;ref=doc(db,'boujo_test',ADMIN);status('全データをクラウドから読み込み中…');const subscribedEpoch=epoch;unsubscribe=onSnapshot(ref,snap=>{if(subscribedEpoch===epoch&&user)receive(snap);},error=>{if(subscribedEpoch!==epoch)return;ready=false;status('同期に接続できません：'+error.message+'。端末の変更は保持しています。');});
 });
+
 

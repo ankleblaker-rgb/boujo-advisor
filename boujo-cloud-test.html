@@ -24,7 +24,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <main>
 <section id="home" class="active">
 <div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div>
-<div class="card"><b>全データ同期版 4・複数条件対応</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
+<div class="card"><b>全データ同期版 5・登録情報の差分確認</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
 <div id="cloudConflict" class="card hidden"><h3>ほかの端末の変更と競合しています</h3><p>比較して、この項目にどちらの内容を使うか選択してください。関連する未同期操作にも適用します。</p><pre id="cloudConflictData" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto"></pre><button id="cloudKeepRemote" class="secondary">この項目はクラウドの内容を使う</button> <button id="cloudKeepLocal" class="secondary">この項目は端末の変更を使う</button></div>
 <button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button>
 <h2>ホーム</h2>
@@ -72,6 +72,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <section id="list">
 <h2>農薬一覧</h2>
 <div class="card"><div class="muted">公式データの取り込み後、各農薬の「使用条件を選んで取り込む」から対象・使用方法を選択します。入力済みの内容は「登録内容と使用条件を確認」で確認できます。</div></div>
+<div class="card"><h3>登録情報の変更確認</h3><p id="registrationReviewSummary" role="status"></p><button type="button" class="secondary" id="compareRegistration">取り込み済みデータと比較</button><p id="registrationReviewMessage" role="status"></p><div id="registrationReviewList"></div></div>
 <div class="card" id="lookupSetup">
  <h3>農薬名から詳細を自動入力</h3>
  <p id="lookupStatus" role="status">初回のみ、公式データを取り込んでください。</p>
@@ -80,7 +81,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <p><a href="https://www.acis.famic.go.jp/ddata/index2.htm" target="_blank" rel="noopener noreferrer">FAMICの公式ダウンロードページを開く</a></p>
  <label for="lookupFiles">公式ZIP・CSVを3つ選択</label><input id="lookupFiles" type="file" accept=".zip,.csv" multiple>
  <button class="secondary" type="button" id="importLookup">選択したデータを取り込む</button>
- <p class="muted">更新時も3つのファイルを選択します。登録済みの農薬一覧・散布履歴は変更しません。共有開始後は、1台で取り込むとほかの端末にも同期します。</p>
+ <p class="muted">更新時も3つのファイルを選択します。保存条件と比較し、差分がある条件は確認待ちに戻します。保存値・過去の散布履歴は自動で上書きしません。1台で取り込むと比較結果もほかの端末へ同期します。</p>
  </details>
 </div>
 
@@ -155,8 +156,8 @@ window.BoujoSync=(()=>{
  function merge(state,ops=pending()){return ops.reduce((s,op)=>apply(s,op,true),state);}
  function ack(ids){atomic({[keys.pending]:JSON.stringify(pending().filter(op=>!ids.includes(op.id)))});}
  function rebase(opId,state,useLocal){const ops=pending();const i=ops.findIndex(o=>o.id===opId);if(i<0)return;if(useLocal)ops[i]={...ops[i],changes:ops[i].changes.map(c=>({...c,before:clone(currentValue(state,c))}))};else{const touched=new Set(ops[i].changes.map(c=>c.domain+':'+c.id));ops.splice(i,1);for(let j=i;j<ops.length;j++){if(ops[j].changes.some(c=>touched.has(c.domain+':'+c.id))){for(const c of ops[j].changes)touched.add(c.domain+':'+c.id);ops[j]={...ops[j],changes:[]};}}}atomic({[keys.pending]:JSON.stringify(ops.filter(o=>o.changes.length))});notify();}
- function readCloud(data){if((data.minClientVersion||0)>4)throw Error('アプリの更新が必要です');if(!Array.isArray(data.records))throw Error('クラウドの散布履歴が不正です');const catalog=data.catalogJson===undefined?null:JSON.parse(data.catalogJson);if(catalog!==null&&!validCatalog(catalog))throw Error('クラウドの農薬一覧が不正です');const lookup=data.lookup||null;if(lookup&&(lookup.encoding!=='gzip-base64'||typeof lookup.data!=='string'||typeof lookup.digest!=='string'))throw Error('公式検索データの形式が不正です');const normalized=data.records.map(norm);if(!normalized.every(r=>r.slice(0,4).every(v=>typeof v==='string')&&typeof r[6]==='string')||new Set(normalized.map(r=>r[6])).size!==normalized.length)throw Error('散布履歴の形式・記録IDを確認してください');return {records:normalized,catalog,lookup};}
- function writeCloud(state){const fields={schemaVersion:4,minClientVersion:4,records:state.records.map(recordObject),updatedAt:new Date().toISOString()};if(state.catalog!==null)fields.catalogJson=JSON.stringify(state.catalog);if(state.lookup)fields.lookup=state.lookup;else fields.lookup=null;if(new TextEncoder().encode(JSON.stringify(fields)).length>850000)throw Error('クラウド保存量の上限に近いため保存できません。端末の変更は保持しています');return fields;}
+ function readCloud(data){if((data.minClientVersion||0)>5)throw Error('アプリの更新が必要です');if(!Array.isArray(data.records))throw Error('クラウドの散布履歴が不正です');const catalog=data.catalogJson===undefined?null:JSON.parse(data.catalogJson);if(catalog!==null&&!validCatalog(catalog))throw Error('クラウドの農薬一覧が不正です');const lookup=data.lookup||null;if(lookup&&(lookup.encoding!=='gzip-base64'||typeof lookup.data!=='string'||typeof lookup.digest!=='string'))throw Error('公式検索データの形式が不正です');const normalized=data.records.map(norm);if(!normalized.every(r=>r.slice(0,4).every(v=>typeof v==='string')&&typeof r[6]==='string')||new Set(normalized.map(r=>r[6])).size!==normalized.length)throw Error('散布履歴の形式・記録IDを確認してください');return {records:normalized,catalog,lookup};}
+ function writeCloud(state){const fields={schemaVersion:5,minClientVersion:5,records:state.records.map(recordObject),updatedAt:new Date().toISOString()};if(state.catalog!==null)fields.catalogJson=JSON.stringify(state.catalog);if(state.lookup)fields.lookup=state.lookup;else fields.lookup=null;if(new TextEncoder().encode(JSON.stringify(fields)).length>850000)throw Error('クラウド保存量の上限に近いため保存できません。端末の変更は保持しています');return fields;}
  function packed(){return JSON.parse(localStorage.getItem(keys.packed)||'null');}
  function validLookup(value){return value?.version===1&&typeof value.date==='string'&&Array.isArray(value.products)&&value.products.length>0&&value.products.every(p=>typeof p.id==='string'&&typeof p.name==='string'&&typeof p.category==='string'&&typeof p.company==='string'&&typeof p.form==='string'&&Array.isArray(p.ingredients)&&Array.isArray(p.uses));}
  async function pack(value){if(!validLookup(value))throw Error('公式検索データの形式が不正です');if(typeof CompressionStream==='undefined')throw Error('このブラウザでは検索データを共有できません。Chromeを更新してください');const raw=new TextEncoder().encode(JSON.stringify(value));const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',raw)),b=>b.toString(16).padStart(2,'0')).join('');const bytes=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return {encoding:'gzip-base64',data:btoa(text),digest,date:value.date,count:value.products.length};}
@@ -178,8 +179,63 @@ const catalogKey=key+"_catalog_v1";
 let master=JSON.parse(localStorage.getItem(catalogKey)||"null")||seedMaster.map(p=>p.slice());
 let catalogEditingName=null,catalogOriginalRow=null;
 let catalogConditions=[],conditionEditingId=null;
+let registrationReviewReady=false;
 function localToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
-function validCondition(c){return !!c&&typeof c==='object'&&!Array.isArray(c)&&typeof c.crop==='string'&&Array.isArray(c.targets)&&c.targets.every(t=>typeof t==='string')&&(c.phi===null||(Number.isInteger(c.phi)&&c.phi>=0))&&typeof c.source==='string'&&typeof c.confirmed==='boolean'&&(c.details===undefined||(c.details&&typeof c.details==='object'&&!Array.isArray(c.details)&&Object.values(c.details).every(v=>typeof v==='string')));}
+function reviewField(v){return String(v??'').normalize('NFKC').trim().replace(/\s+/g,' ');}
+function officialUseCondition(product,use,db){return {id:'official',crop:use.crop,targets:use.target?[use.target]:[],phi:phiFromTiming(use.timing),source:`FAMIC 登録反映日${db.date}／登録番号${product.id}／取込日${db.imported} https://www.acis.famic.go.jp/ddata/index2.htm`,confirmed:false,details:{Number:product.id,Ingredients:product.ingredients.join('、'),Company:product.company,Form:product.form,Timing:use.timing,Dilution:use.dilution,Volume:use.volume,Method:[use.method,use.place].filter(Boolean).join('／'),MaxUses:use.count,TotalUses:use.total,Restrictions:use.restrictions||''}};}
+function reviewValues(c){const d=c.details||{};return {'登録番号':d.Number,'登録作物':c.crop,'登録対象':c.targets.join('、'),'収穫前日数':c.phi===null?'未設定':String(c.phi),'使用時期':d.Timing,'希釈倍数・使用量':d.Dilution,'散布液量':d.Volume,'使用方法・適用場所':d.Method,'本剤の使用回数':d.MaxUses,'成分の総使用回数':d.TotalUses,'その他の使用条件':d.Restrictions,'有効成分':d.Ingredients,'登録を有する者':d.Company,'剤型':d.Form};}
+function reviewDifferences(before,after){const a=reviewValues(before),b=reviewValues(after);return Object.keys(a).filter(k=>reviewField(a[k])!==reviewField(b[k])).map(k=>({field:k,before:a[k]??'',after:b[k]??''}));}
+function registrationUpdateHistory(c){if(!c.registrationUpdate?.previous)return '';return `<details><summary>直前の登録情報更新（${esc(c.registrationUpdate.date)}反映分）</summary><div style="overflow:auto"><table><thead><tr><th>項目</th><th>更新前</th><th>更新後</th></tr></thead><tbody>${reviewDifferences(c.registrationUpdate.previous,c).map(d=>`<tr><th>${esc(d.field)}</th><td>${esc(d.before||'（空欄）')}</td><td>${esc(d.after||'（空欄）')}</td></tr>`).join('')}</tbody></table></div></details>`;}
+let reviewProductCache=null,reviewProductIndex=null;
+function reviewIndex(db){if(reviewProductCache!==db){reviewProductIndex=new Map(db.products.map(p=>[p.id,p]));reviewProductCache=db;}return reviewProductIndex;}
+function compareSavedCondition(c,db){
+ if(!db)return {status:'no_data',label:'公式検索データが未取り込み',candidates:[]};
+ if(!c.details?.Number)return {status:'untracked',label:'登録番号なし・自動比較の対象外',candidates:[]};
+ const sourceDate=c.source?.match(/登録反映日(\d{4}-\d{2}-\d{2})/)?.[1];if(sourceDate&&sourceDate>db.date)return {status:'older',label:'取り込み済みデータが保存条件より古い',candidates:[]};
+ const full=['Timing','Dilution','Volume','Method','MaxUses','TotalUses','Restrictions','Ingredients','Company','Form'].every(k=>typeof c.details[k]==='string')&&!!c.details.Timing&&!!c.details.Method;
+ if(!full||c.targets.length!==1)return {status:'incomplete',label:'比較用の登録情報が不足・公式条件を選び直してください',candidates:[]};
+ const p=reviewIndex(db).get(c.details.Number);if(!p)return {status:'not_found',label:'最新の取込データに登録番号が見つかりません',candidates:[]};
+ const candidates=p.uses.map(u=>officialUseCondition(p,u,db));
+ const exact=candidates.find(n=>reviewDifferences(c,n).length===0);if(exact)return {status:'same',label:'保存内容と取込データが一致',candidates:[exact],product:p};
+ const identity=n=>reviewField(n.crop)===reviewField(c.crop)&&reviewField(n.targets[0])===reviewField(c.targets[0])&&reviewField(n.details.Method)===reviewField(c.details.Method);
+ const matching=candidates.filter(identity);return matching.length?{status:'changed',label:'登録内容に差分あり・更新内容の確認が必要',candidates:matching,product:p}:{status:'missing',label:'同じ作物・対象・方法の登録行が見つかりません',candidates,product:p};
+}
+function isReviewBlocked(result){return ['changed','missing','not_found'].includes(result.status);}
+function conditionReviewBlock(c){if(!registrationReviewReady)return '';const r=compareSavedCondition(c,lookupDB);return isReviewBlocked(r)?r.label:'';}
+function reviewCatalogAgainst(catalog,db){return catalog.map(p=>{const conditions=conditionsFor(p[4]);let changed=false;const checked=conditions.map(c=>{const result=compareSavedCondition(c,db);if(isReviewBlocked(result)){const review={date:db.date,status:result.status};if(c.confirmed||!BoujoSync.equal(c.registrationComparison,review)){c.confirmed=false;c.registrationComparison=review;changed=true;}}return c;});return changed?[...p.slice(0,4),makeConditionMeta(checked,p[4])]:p;});}
+function reviewBadge(c){if(!registrationReviewReady)return '';const r=compareSavedCondition(c,lookupDB);return `<p class="${isReviewBlocked(r)?'warn':'muted'}">登録情報比較：${esc(r.label)}${lookupDB?'（'+esc(lookupDB.date)+'反映分）':''}</p>`;}
+function renderRegistrationReview(){
+ const panel=document.getElementById('registrationReviewList'),summary=document.getElementById('registrationReviewSummary');if(!registrationReviewReady)return;
+ if(!lookupDB){summary.textContent='公式データを取り込むと、保存した使用条件との違いを確認できます。';panel.innerHTML='';return;}
+ const items=master.flatMap(p=>conditionsFor(p[4]).map(c=>({name:p[0],c,result:compareSavedCondition(c,lookupDB)})));
+ const blocked=items.filter(x=>isReviewBlocked(x.result)),same=items.filter(x=>x.result.status==='same'),unknown=items.length-blocked.length-same.length;
+ summary.textContent=`比較元：${lookupDB.date}反映分／変更・要確認${blocked.length}条件／内容一致${same.length}条件／比較対象外など${unknown}条件。取り込み済みデータとの比較であり、最新の公表版かは自動確認しません。`;
+ panel.innerHTML=blocked.length?blocked.map((item,index)=>{
+ const r=item.result;return `<div class="card"><b>${esc(item.name)}</b><p>${esc(conditionCaption(item.c))}</p><p class="warn">${esc(r.label)}</p><p class="muted">要確認の条件は日数判定から外します。登録番号が見つからないだけでは、失効・使用禁止とは断定しません。</p>${r.candidates.length?`<label for="reviewSelect${index}">比較・取り込み先の登録行</label><select id="reviewSelect${index}" data-review-select="${index}"><option value="">内容を確認する行を選んでください</option>${r.candidates.map((c,i)=>`<option value="${i}">${esc(conditionCaption(c))}｜${esc(c.details.Volume)}｜${esc(c.details.MaxUses)}${c.details.Restrictions?'｜'+esc(c.details.Restrictions):''}</option>`).join('')}</select><div id="reviewDiff${index}"></div><button type="button" class="secondary" data-review-apply="${index}" disabled>選んだ新情報へ更新（確認待ちで保存）</button>`:'<p>容器の登録番号と公式登録情報を確認してください。保存済み条件と過去の散布履歴は残しています。</p>'}<button type="button" class="secondary" data-review-edit="${index}" style="margin-top:8px">農薬の条件を編集</button></div>`;
+ }).join(''):(same.length?'<p class="ok">自動比較できる保存条件に、変更・削除の可能性がある項目は見つかりませんでした。</p>':'<p class="muted">自動比較できる保存条件がまだありません。登録番号や詳細情報を確認してください。</p>');
+ if(unknown)panel.innerHTML+=`<details><summary>比較対象外など ${unknown}条件を表示</summary>${items.filter(x=>!isReviewBlocked(x.result)&&x.result.status!=='same').map(x=>`<p>${esc(x.name)}：${esc(x.result.label)}</p>`).join('')}</details>`;
+ panel.querySelectorAll('[data-review-select]').forEach(select=>select.onchange=()=>{
+ const i=Number(select.dataset.reviewSelect),item=blocked[i],candidate=select.value===''?null:item.result.candidates[Number(select.value)],out=document.getElementById('reviewDiff'+i),button=panel.querySelector(`[data-review-apply="${i}"]`);button.disabled=!candidate;
+ if(!candidate){out.innerHTML='';return;}const differences=reviewDifferences(item.c,candidate);
+ out.innerHTML=`${item.result.status==='missing'?'<p class="warn">同じ登録行が見つからないため、作物・対象・使用方法が異なる可能性があります。別の条件への変更でよいか確認してください。</p>':''}<div style="overflow:auto"><table><thead><tr><th>項目</th><th>保存済み</th><th>取込データ</th></tr></thead><tbody>${differences.map(d=>`<tr><th>${esc(d.field)}</th><td style="white-space:pre-wrap">${esc(d.before||'（空欄）')}</td><td style="white-space:pre-wrap">${esc(d.after||'（空欄）')}</td></tr>`).join('')}</tbody></table></div>`;
+ });
+ panel.querySelectorAll('[data-review-apply]').forEach(button=>button.onclick=()=>{const i=Number(button.dataset.reviewApply),item=blocked[i],select=document.getElementById('reviewSelect'+i);if(select.value==='')return;applyRegistrationUpdate(item.name,item.c.id,item.result.candidates[Number(select.value)]);});
+ panel.querySelectorAll('[data-review-edit]').forEach(button=>button.onclick=()=>{const item=blocked[Number(button.dataset.reviewEdit)],i=master.findIndex(p=>p[0]===item.name);if(i>=0){editPesticide(i);loadConditionEditor(item.c.id);}});
+}
+function applyRegistrationUpdate(name,id,proposed){
+ const i=master.findIndex(p=>p[0]===name);if(i<0)return;const conditions=conditionsFor(master[i][4]),j=conditions.findIndex(c=>c.id===id);if(j<0)return;
+ const current=conditions[j],result=compareSavedCondition(current,lookupDB),latest=result.candidates.find(c=>reviewDifferences(c,proposed).length===0);
+ if(!latest){alert('比較元のデータが変更されています。もう一度、新しい登録行を選択してください。');renderRegistrationReview();return;}
+ const previous=BoujoSync.clone(current);delete previous.registrationUpdate;delete previous.registrationComparison;
+ conditions[j]={...BoujoSync.clone(latest),id:current.id,confirmed:false,registrationUpdate:{date:lookupDB.date,at:new Date().toISOString(),previous}};
+ const duplicate=conditions.find((c,index)=>index!==j&&conditionSignature(c)===conditionSignature(conditions[j]));if(duplicate){alert('同じ内容の条件がすでに保存されています。条件の編集画面で整理してください。');return;}
+ const next=master.map((p,index)=>index===i?[...p.slice(0,4),makeConditionMeta(conditions,p[4])]:p);
+ try{commitSharedUI({catalog:next});if(catalogEditingName===name){editPesticide(i);loadConditionEditor(id);}render();document.getElementById('registrationReviewMessage').textContent=name+'の選択した条件を更新しました。農薬一覧で新しい使用条件を確認し、確認チェックを入れてください。';}catch(e){alert('更新できません：'+e.message);}
+}
+document.getElementById('compareRegistration').onclick=()=>{try{if(!lookupDB)throw Error('先に公式データを取り込んでください');commitSharedUI({catalog:reviewCatalogAgainst(master,lookupDB)});render();document.getElementById('registrationReviewMessage').textContent='取り込み済みの公式データとの比較を行いました。';}catch(e){alert(e.message);}};
+
+function validRegistrationMetadata(c){if(c.registrationComparison!==undefined){const r=c.registrationComparison;if(!r||typeof r!=='object'||Array.isArray(r)||typeof r.date!=='string'||!['changed','missing','not_found'].includes(r.status))return false;}if(c.registrationUpdate!==undefined){const r=c.registrationUpdate;if(!r||typeof r!=='object'||Array.isArray(r)||typeof r.date!=='string'||typeof r.at!=='string'||!r.previous||typeof r.previous!=='object')return false;const p={...r.previous};delete p.registrationUpdate;delete p.registrationComparison;if(!validCondition(p))return false;}return true;}
+function validCondition(c){return !!c&&typeof c==='object'&&!Array.isArray(c)&&typeof c.crop==='string'&&Array.isArray(c.targets)&&c.targets.every(t=>typeof t==='string')&&(c.phi===null||(Number.isInteger(c.phi)&&c.phi>=0))&&typeof c.source==='string'&&typeof c.confirmed==='boolean'&&(c.details===undefined||(c.details&&typeof c.details==='object'&&!Array.isArray(c.details)&&Object.values(c.details).every(v=>typeof v==='string')))&&validRegistrationMetadata(c);}
 function conditionsFor(meta){
  if(!meta)return [];
  if(Array.isArray(meta.conditions))return meta.conditions.map(c=>BoujoSync.clone(c));
@@ -201,11 +257,11 @@ function stageCurrentCondition(){
  const differentNumber=catalogConditions.find(x=>x.details?.Number&&c.details.Number&&x.details.Number!==c.details.Number);if(differentNumber)throw Error('異なる登録番号の使用条件は同じ農薬にまとめられません');
  const existing=catalogConditions.find(x=>conditionSignature(x)===conditionSignature(c)&&x.id!==conditionEditingId);
  if(existing){if(conditionEditingId)throw Error('同じ使用条件がすでにあります。対象・方法などを確認してください');loadConditionEditor(existing.id);return;}
- const i=catalogConditions.findIndex(x=>x.id===conditionEditingId);if(i>=0)catalogConditions[i]=c;else{if(catalogConditions.length>=1000)throw Error('使用条件は1剤につき1000件まで保存できます');catalogConditions.push(c);}conditionEditingId=c.id;updateConditionButton();renderConditionDraft();
+ const i=catalogConditions.findIndex(x=>x.id===conditionEditingId);if(i>=0){const old=catalogConditions[i];if(conditionSignature(old)===conditionSignature(c)){for(const key of ['registrationComparison','registrationUpdate'])if(old[key])c[key]=BoujoSync.clone(old[key]);}catalogConditions[i]=c;}else{if(catalogConditions.length>=1000)throw Error('使用条件は1剤につき1000件まで保存できます');catalogConditions.push(c);}conditionEditingId=c.id;updateConditionButton();renderConditionDraft();
 }
 function renderConditionDraft(){
  const out=document.getElementById('conditionDraftList');document.getElementById('conditionDraftCount').textContent=`保存候補：${catalogConditions.length}件（「農薬を保存」で確定）`;
- out.innerHTML=catalogConditions.length?catalogConditions.map((c,i)=>`<div class="card" style="box-shadow:none"><b>条件${i+1}</b> ${esc(conditionCaption(c))}<p class="muted">${c.confirmed?'内容を確認済み':'使用条件の確認待ち'}</p>${!catalogCompleteness(c)?`<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" data-draft-confirm="${esc(c.id)}" ${c.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>この条件が水耕小ネギの予定する使用に適合することを確認し、日数判定に使う</span></label>`:`<p class="muted">${esc(catalogCompleteness(c))}</p>`}<button type="button" class="secondary" data-draft-edit="${esc(c.id)}">この条件を編集</button> <button type="button" class="secondary" data-draft-remove="${esc(c.id)}">この条件を外す</button></div>`).join(''):'まだ使用条件がありません。公式の候補から使用条件を選び、下の「この使用条件を追加」を押してください。';
+ out.innerHTML=catalogConditions.length?catalogConditions.map((c,i)=>`<div class="card" style="box-shadow:none"><b>条件${i+1}</b> ${esc(conditionCaption(c))}<p class="muted">${c.confirmed&&!conditionReviewBlock(c)?'内容を確認済み':'使用条件の確認待ち'}</p>${!catalogCompleteness(c)&&!conditionReviewBlock(c)?`<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" data-draft-confirm="${esc(c.id)}" ${c.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>この条件が水耕小ネギの予定する使用に適合することを確認し、日数判定に使う</span></label>`:`<p class="muted">${esc(catalogCompleteness(c)||conditionReviewBlock(c))}</p>`}<button type="button" class="secondary" data-draft-edit="${esc(c.id)}">この条件を編集</button> <button type="button" class="secondary" data-draft-remove="${esc(c.id)}">この条件を外す</button></div>`).join(''):'まだ使用条件がありません。公式の候補から使用条件を選び、下の「この使用条件を追加」を押してください。';
  out.querySelectorAll('[data-draft-edit]').forEach(b=>b.onclick=()=>loadConditionEditor(b.dataset.draftEdit));
  out.querySelectorAll('[data-draft-remove]').forEach(b=>b.onclick=()=>{catalogConditions=catalogConditions.filter(c=>c.id!==b.dataset.draftRemove);if(conditionEditingId===b.dataset.draftRemove)clearConditionEditor();renderConditionDraft();});
  out.querySelectorAll('[data-draft-confirm]').forEach(b=>b.onchange=()=>{const c=catalogConditions.find(x=>x.id===b.dataset.draftConfirm);c.confirmed=b.checked;if(c.id===conditionEditingId)document.getElementById('catalogConfirmed').checked=b.checked;});
@@ -213,7 +269,7 @@ function renderConditionDraft(){
 document.getElementById('addCondition').onclick=()=>{try{if(!hasConditionEditor())throw Error('使用条件を選択または入力してください');stageCurrentCondition();document.getElementById('catalogMessage').textContent='保存候補に反映しました。別の条件も選んで追加でき、最後に「農薬を保存」で確定します。';}catch(e){alert(e.message);}};
 document.getElementById('newCondition').onclick=()=>{clearConditionEditor();document.getElementById('catalogCrop').focus();};
 function conditionDetails(c){const d=c.details||{};return [['登録番号',d.Number],['有効成分',d.Ingredients],['登録を有する者',d.Company],['剤型',d.Form],['登録作物',c.crop],['対象',c.targets?.join('、')],['収穫前日数',Number.isInteger(c.phi)?`${c.phi}日`:null],['使用時期',d.Timing],['希釈倍数・使用量',d.Dilution],['散布液量',d.Volume],['使用方法・適用場所',d.Method],['本剤の使用回数',d.MaxUses],['成分の総使用回数',d.TotalUses],['その他の使用条件',d.Restrictions],['出典',c.source]].filter(r=>r[1]!==undefined&&r[1]!==null&&r[1]!=='');}
-function conditionReason(c,target,days){const missing=catalogCompleteness(c);if(missing)return '使用条件の入力待ち：'+missing;if(!c.confirmed)return '使用条件の確認待ち';if(!c.targets.includes(target))return '対象害虫・病害が登録対象と一致しません';if(c.phi>days)return `収穫${c.phi}日前までのため日数不足`;return '';}
+function conditionReason(c,target,days){const outdated=conditionReviewBlock(c);if(outdated)return outdated;const missing=catalogCompleteness(c);if(missing)return '使用条件の入力待ち：'+missing;if(!c.confirmed)return '使用条件の確認待ち';if(!c.targets.includes(target))return '対象害虫・病害が登録対象と一致しません';if(c.phi>days)return `収穫${c.phi}日前までのため日数不足`;return '';}
 function eligibleConditions(p,target,days){return conditionsFor(p[4]).filter(c=>!conditionReason(c,target,days));}
 
 function validCatalog(value){return Array.isArray(value)&&value.every(p=>Array.isArray(p)&&p.length>=4&&p.slice(0,4).every(v=>typeof v==="string")&&["殺虫剤","殺菌剤","その他"].includes(p[1])&&(!p[4]||(validCondition(p[4])&&(p[4].conditions===undefined||(Array.isArray(p[4].conditions)&&p[4].conditions.length<=1000&&p[4].conditions.every(c=>validCondition(c)&&typeof c.id==="string"&&c.id.length>0)&&new Set(p[4].conditions.map(c=>c.id)).size===p[4].conditions.length)))))&&new Set(value.map(p=>p[0])).size===value.length;}
@@ -256,20 +312,20 @@ function catalogCompleteness(m){
  return '';
 }
 function catalogState(p){
- const conditions=conditionsFor(p[4]),ready=conditions.filter(c=>!catalogCompleteness(c)),confirmed=ready.filter(c=>c.confirmed),imported=!!p[4]?.details?.Number;
+ const conditions=conditionsFor(p[4]),ready=conditions.filter(c=>!catalogCompleteness(c)),confirmed=ready.filter(c=>c.confirmed&&!conditionReviewBlock(c)),imported=!!p[4]?.details?.Number;
  if(!conditions.length)return {label:imported?'基本情報取込済み・使用条件の入力待ち':'使用条件が未登録',help:'使用条件を選んで取り込んでください。',ready:false};
- if(conditions.length===1){const c=conditions[0],missing=catalogCompleteness(c);if(missing)return {label:imported?'基本情報取込済み・使用条件の入力待ち':'登録情報の入力途中',help:missing,ready:false};return {label:imported?(c.confirmed?'取込済み・日数判定に使用中':'取込済み・使用条件の確認待ち'):(c.confirmed?'入力済み・日数判定に使用中':'入力済み・使用条件の確認待ち'),help:'下で条件の詳細を確認できます。',ready:true};}
+ if(conditions.length===1){const c=conditions[0],missing=catalogCompleteness(c);if(missing)return {label:imported?'基本情報取込済み・使用条件の入力待ち':'登録情報の入力途中',help:missing,ready:false};return {label:imported?(c.confirmed&&!conditionReviewBlock(c)?'取込済み・日数判定に使用中':'取込済み・使用条件の確認待ち'):(c.confirmed&&!conditionReviewBlock(c)?'入力済み・日数判定に使用中':'入力済み・使用条件の確認待ち'),help:'下で条件の詳細を確認できます。',ready:true};}
  return {label:`使用条件${conditions.length}件を保存・${confirmed.length}件を日数判定に使用中`,help:'作物・対象・使用方法・収穫前日数は、条件ごとに判定します。',ready:ready.length>0};
 }
 function catalogCard(p,i){
  const s=catalogState(p),conditions=conditionsFor(p[4]);
  return `<div class="card"><b>${esc(p[0])}</b><br><span class="badge">${esc(p[1])}</span> <span class="badge">${esc(p[2])}</span><p class="muted"><b>${esc(s.label)}</b></p><p class="muted">${esc(s.help)}</p>`+
- conditions.map((c,n)=>`<details style="margin:10px 0"><summary>条件${n+1}：${esc(conditionCaption(c))}【${c.confirmed&&!catalogCompleteness(c)?'日数判定に使用中':'確認待ち'}】</summary><dl>${conditionDetails(c).map(([k,v])=>`<dt style="font-weight:700;margin-top:10px">${esc(k)}</dt><dd style="margin:3px 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(v)}</dd>`).join('')}</dl>${!catalogCompleteness(c)?`<label style="display:flex;align-items:flex-start;gap:8px"><input type="checkbox" data-catalog-confirm="${i}" data-condition-id="${esc(c.id)}" ${c.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>この条件が水耕小ネギで予定する使用に適合することを確認し、日数判定に使う</span></label>`:`<p class="muted">${esc(catalogCompleteness(c))}</p>`}<button type="button" class="secondary" data-condition-drug="${i}" data-condition-edit="${esc(c.id)}">この条件を編集</button></details>`).join('')+
+ conditions.map((c,n)=>`<details style="margin:10px 0"><summary>条件${n+1}：${esc(conditionCaption(c))}【${c.confirmed&&!catalogCompleteness(c)&&!conditionReviewBlock(c)?'日数判定に使用中':'確認待ち'}】</summary>${reviewBadge(c)}<dl>${conditionDetails(c).map(([k,v])=>`<dt style="font-weight:700;margin-top:10px">${esc(k)}</dt><dd style="margin:3px 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(v)}</dd>`).join('')}</dl>${registrationUpdateHistory(c)}${!catalogCompleteness(c)&&!conditionReviewBlock(c)?`<label style="display:flex;align-items:flex-start;gap:8px"><input type="checkbox" data-catalog-confirm="${i}" data-condition-id="${esc(c.id)}" ${c.confirmed?'checked':''} style="width:22px;height:22px;flex:0 0 auto"><span>この条件が水耕小ネギで予定する使用に適合することを確認し、日数判定に使う</span></label>`:`<p class="muted">${esc(catalogCompleteness(c)||conditionReviewBlock(c))}</p>`}<button type="button" class="secondary" data-condition-drug="${i}" data-condition-edit="${esc(c.id)}">この条件を編集</button></details>`).join('')+
  `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" class="secondary" data-load-pesticide="${i}">使用条件を選んで追加</button><button type="button" class="secondary" data-edit-pesticide="${i}">編集</button><button type="button" class="secondary" data-delete-pesticide="${i}">農薬を削除</button></div></div>`;
 }
 function setCatalogConfirmation(index,checked,conditionId){
  const p=master[index];if(!p)return;const conditions=conditionsFor(p[4]),selected=conditions.find(c=>c.id===(conditionId||conditions[0]?.id));if(!selected)return;
- const missing=catalogCompleteness(selected);if(checked&&missing){alert(missing);render();return;}selected.confirmed=checked;
+ const missing=catalogCompleteness(selected)||conditionReviewBlock(selected);if(checked&&missing){alert(missing);render();return;}selected.confirmed=checked;
  const next=master.map((row,i)=>i===index?[...row.slice(0,4),makeConditionMeta(conditions,row[4])]:row);
  try{commitSharedUI({catalog:next});}catch(e){alert('保存できません：'+e.message);render();return;}
  document.getElementById('adviceResult').innerHTML='';render();document.getElementById('catalogMessage').textContent=p[0]+'の選択した使用条件：'+(checked?'日数判定に使用する設定を保存しました。':'日数判定の使用を解除しました。');
@@ -294,6 +350,7 @@ function render() {
  document.querySelectorAll(".pesticide-check").forEach(el=>el.onchange=updateAutoTargets);
  document.querySelectorAll(".pesticide-check").forEach(el=>el.checked=selected.has(el.value));
  document.getElementById("registeredTargets").innerHTML=[...new Set(master.flatMap(p=>conditionsFor(p[4]).flatMap(c=>c.targets)))].map(t=>`<option value="${esc(t)}"></option>`).join("");
+ renderRegistrationReview();
  document.getElementById("pesticideList").innerHTML=master.map(catalogCard).join("");
  document.querySelectorAll("[data-edit-pesticide]").forEach(b=>b.onclick=()=>editPesticide(Number(b.dataset.editPesticide)));
  document.querySelectorAll("[data-delete-pesticide]").forEach(b=>b.onclick=()=>deletePesticide(Number(b.dataset.deletePesticide)));
@@ -348,7 +405,7 @@ function conditionRecordText(c){return `登録作物：${c.crop}／対象：${c.
 document.getElementById("showAdvice").onclick=showAdvice;
 document.getElementById("plannedSpray").value=localToday();
 for(const id of ["plannedSpray","harvest","adviceTarget"])document.getElementById(id).oninput=()=>{document.getElementById("adviceResult").innerHTML="";};
-document.getElementById("exportBackup").onclick=()=>downloadSharedJSON({app:"nougyounisshi-boujo",version:4,exportedAt:new Date().toISOString(),records,catalog:master,lookup:lookupDB},"防除アドバイザー_全データ_"+localToday()+".json");
+document.getElementById("exportBackup").onclick=()=>downloadSharedJSON({app:"nougyounisshi-boujo",version:5,exportedAt:new Date().toISOString(),records,catalog:master,lookup:lookupDB},"防除アドバイザー_全データ_"+localToday()+".json");
 document.getElementById("importBackup").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
  try{const data=JSON.parse(await f.text());if(data.app!=="nougyounisshi-boujo"||!Array.isArray(data.records)||!data.records.every(r=>Array.isArray(r)&&r.length>=4&&r.slice(0,4).every(v=>typeof v==="string")))throw Error("対応するバックアップではありません");if(data.catalog!==undefined&&!validCatalog(data.catalog))throw Error("農薬一覧の形式が不正です");if(data.lookup&&!BoujoSync.validLookup(data.lookup))throw Error("公式検索データが不正です");if(!confirm("このバックアップで現在の保存内容を置き換え、ログイン後はクラウドにも反映します。復元前のバックアップを保存しましたか？"))return;
@@ -424,7 +481,7 @@ document.getElementById('importLookup').onclick=async()=>{
  if(!files.length){status.textContent='公式ZIPまたはCSVを3つ選択してください';return;}
  btn.disabled=true;status.textContent='公式データを取り込んでいます…';
  try{const extracted=[];for(const f of files){if(f.size>20*1024*1024)throw Error('ファイルが大きすぎます');extracted.push(...await officialFiles(f));}
-  const next=buildOfficialLookup(extracted),packed=await BoujoSync.pack(next);commitSharedUI({lookup:packed},{lookupRaw:next});resetLookupSelection();updateLookupStatus();lookupSearch();
+  const next=buildOfficialLookup(extracted);if(lookupDB&&next.date<lookupDB.date)throw Error('今の検索データより古い版は取り込めません');const packed=await BoujoSync.pack(next),checked=reviewCatalogAgainst(master,next);commitSharedUI({lookup:packed,catalog:checked},{lookupRaw:next});resetLookupSelection();updateLookupStatus();render();lookupSearch();document.getElementById('registrationReviewMessage').textContent='公式データを取り込み、保存条件と比較しました。差分があれば下の一覧から確認・更新してください。';
  }catch(e){status.textContent='取り込めませんでした：'+e.message+'。取り込み前のデータは保持しています。';}finally{btn.disabled=false;}
 };
 function phiFromTiming(t){t=t.normalize('NFKC').trim();if(t==='収穫前日まで')return 1;if(t==='収穫当日まで')return 0;const m=t.match(/^収穫(\d+)日前まで$/);return m?Number(m[1]):null;}
@@ -467,7 +524,7 @@ for(const id of ['catalogCategory','catalogGroup','catalogCrop','catalogTargets'
 function getSharedUI(){return {records:BoujoSync.clone(records),catalog:BoujoSync.clone(master),lookup:BoujoSync.packed()};}
 function getLookupUI(){return lookupDB;}
 function commitSharedUI(next,options={}){
- const after={...getSharedUI(),...next};BoujoSync.commit(getSharedUI(),after,options);records=after.records;master=after.catalog;if(Object.hasOwn(options,'lookupRaw')){lookupDB=options.lookupRaw;updateLookupStatus();}
+ const after={...getSharedUI(),...next};if(registrationReviewReady&&Object.hasOwn(next,'catalog'))after.catalog=reviewCatalogAgainst(after.catalog,Object.hasOwn(options,'lookupRaw')?options.lookupRaw:lookupDB);BoujoSync.commit(getSharedUI(),after,options);records=after.records;master=after.catalog;if(Object.hasOwn(options,'lookupRaw')){lookupDB=options.lookupRaw;updateLookupStatus();}
  document.getElementById('syncDiagnostic').textContent='端末に保存しました。全データの同期待ち：'+BoujoSync.pending().length+'件';
 }
 function applySharedUI(state,raw){
@@ -475,8 +532,9 @@ function applySharedUI(state,raw){
  records.sort((a,b)=>b[0].localeCompare(a[0]));if(editingId)editingIndex=records.findIndex(r=>r[6]===editingId);
  render();document.getElementById('adviceResult').innerHTML='';if(editingId&&editingIndex<0)document.getElementById('saved').textContent='編集中の記録が別端末で削除されました。編集をキャンセルして内容を確認してください。';
 }
-setTimeout(()=>{if(BoujoSync.adapterVersion!==4)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
+setTimeout(()=>{if(BoujoSync.adapterVersion!==5)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
 renderConditionDraft();
+registrationReviewReady=true;render();
 window.getSharedUI=getSharedUI;window.getLookupUI=getLookupUI;window.applySharedUI=applySharedUI;
 try{BoujoSync.migrateLegacy();}catch(e){document.getElementById('cloudStatus').textContent='以前の未同期データを確認できません：'+e.message;}
 document.getElementById('downloadLocalCopy').onclick=()=>{
@@ -485,7 +543,8 @@ document.getElementById('downloadLocalCopy').onclick=()=>{
 function downloadSharedJSON(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
 </script>
-<script type="module" src="./boujo-cloud-sync.js?v=4-multiconditions-20261103" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script></body></html>
+<script type="module" src="./boujo-cloud-sync.js?v=5-registration-review-20261103" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script></body></html>
+
 
 
 
