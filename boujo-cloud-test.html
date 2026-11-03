@@ -23,8 +23,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 </nav>
 <main>
 <section id="home" class="active">
-<div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">Googleログイン後に同期します。初回は必ず手動で移行操作を行います。運用版のデータには触れません。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div>
-<div class="card"><b>同期診断版 2</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
+<div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div>
+<div class="card"><b>全データ同期版 3</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div>
+<div id="cloudConflict" class="card hidden"><h3>ほかの端末の変更と競合しています</h3><p>比較して、この項目にどちらの内容を使うか選択してください。関連する未同期操作にも適用します。</p><pre id="cloudConflictData" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto"></pre><button id="cloudKeepRemote" class="secondary">この項目はクラウドの内容を使う</button> <button id="cloudKeepLocal" class="secondary">この項目は端末の変更を使う</button></div>
+<button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button>
 <h2>ホーム</h2>
 <div class="grid3">
 <div class="stat"><span class="muted">栽培</span><b>水耕</b>小ネギ</div>
@@ -32,7 +34,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 <div class="stat"><span class="muted">記録件数</span><b id="count">-</b></div>
 </div>
 <div class="card"><h3>最新の防除記録</h3><div id="recent"></div></div>
-<div class="card"><h3>データのバックアップ・復元</h3><p class="muted">公開URLへ移行する前に、今まで使っていた画面でバックアップを保存してください。ブラウザやURLが変わると記録は自動移行されません。</p><button class="secondary" id="exportBackup" style="width:100%">散布記録・農薬一覧をバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元は現在の散布記録を置き換えます。農薬一覧を含むバックアップでは一覧も置き換えます。復元前にもバックアップを保存してください。</p></div>
+<div class="card"><h3>データのバックアップ・復元</h3><p class="muted">共有開始前や復元前にバックアップを保存してください。共有開始後は、同じGoogleアカウントでログインするとほかの端末でも全データを受け取れます。</p><button class="secondary" id="exportBackup" style="width:100%">全データをバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元後はクラウドにも反映します。先に全データのバックアップを保存してください。</p></div>
 <div class="card"><h3>今回の重要ポイント</h3>
 <div class="ok">防除判断から「この農薬を散布した」を押すと、散布登録画面へ農薬・対象害虫が自動入力されます。</div>
 <div class="muted">候補として表示されただけでは散布履歴に入りません。実際に散布した場合だけ登録してください。</div>
@@ -74,17 +76,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
  <h3>農薬名から詳細を自動入力</h3>
  <p id="lookupStatus" role="status">初回のみ、公式データを取り込んでください。</p>
  <details><summary>公式データの取り込み・更新</summary>
- <p class="muted">FAMICの「登録基本部」「登録適用部一」「登録適用部二」の3つをダウンロードし、まとめて選択してください。ZIPのまま、または展開したCSVを選べます。取り込みはこの端末だけに保存され、公開サイトには送信しません。</p>
+ <p class="muted">FAMICの「登録基本部」「登録適用部一」「登録適用部二」の3つをダウンロードし、まとめて選択してください。ZIPのまま、または展開したCSVを選べます。取り込んだ公式データは、ログイン後に自分専用のクラウドへ保存し、同じアカウントのほかの端末でも検索に使えます。公開サイトには配布しません。</p>
  <p><a href="https://www.acis.famic.go.jp/ddata/index2.htm" target="_blank" rel="noopener noreferrer">FAMICの公式ダウンロードページを開く</a></p>
  <label for="lookupFiles">公式ZIP・CSVを3つ選択</label><input id="lookupFiles" type="file" accept=".zip,.csv" multiple>
  <button class="secondary" type="button" id="importLookup">選択したデータを取り込む</button>
- <p class="muted">更新時も3つのファイルを選択します。登録済みの農薬一覧・散布履歴は変更しません。データは端末ごとに取り込んでください。</p>
+ <p class="muted">更新時も3つのファイルを選択します。登録済みの農薬一覧・散布履歴は変更しません。共有開始後は、1台で取り込むとほかの端末にも同期します。</p>
  </details>
 </div>
 
 <div class="card">
  <h3 id="catalogHeading">農薬を追加</h3>
- <p class="muted">一覧はこの端末に保存されます。クラウド同期の対象は散布記録のみです。削除しても過去の散布記録は残ります。</p>
+ <p class="muted">農薬一覧・使用条件・確認状態もログイン後にクラウド同期します。削除しても過去の散布記録は残ります。</p>
  <label for="catalogName">農薬名（剤型まで入力）</label><input id="catalogName" autocomplete="off" placeholder="例：ベネビア、グレーシア、登録番号">
  <p id="catalogRenamePreview" class="muted" role="status"></p>
  <label id="catalogRenameHistoryLabel" class="hidden" style="display:flex;gap:8px;align-items:flex-start"><input id="catalogRenameHistory" type="checkbox" style="width:22px;height:22px;flex:0 0 auto"><span>同じ略名の過去の散布履歴も変更する（日付・件数・記録IDは保持）</span></label>
@@ -119,6 +121,50 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 </section>
 </main>
 <script>
+// BEGIN SHARED CORE: durable local edits and conflict-aware cloud patches.
+window.BoujoSync=(()=>{
+ const keys={records:'nougyounisshi_spray_records_cloud_test_v1',catalog:'nougyounisshi_spray_records_cloud_test_v1_catalog_v1',raw:'nougyounisshi_spray_records_cloud_test_v1_official_lookup_v1',packed:'boujo_lookup_packed_v3',pending:'boujo_cloud_test_pending_v3',backup:'boujo_before_full_sync_v3'};
+ const clone=x=>JSON.parse(JSON.stringify(x));
+ const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
+ const equal=(a,b)=>JSON.stringify(stable(a??null))===JSON.stringify(stable(b??null));
+ const id=()=>crypto.randomUUID();
+ function norm(r){if(!Array.isArray(r))r=[r.date,r.pesticide,r.category,r.group,r.target,r.memo,r.id];return [...Array.from({length:6},(_,i)=>r[i]??null),r[6]||id()];}
+ function recordObject(r){r=norm(r);return {date:r[0],pesticide:r[1],category:r[2],group:r[3],target:r[4],memo:r[5],id:r[6]};}
+ function pending(){const a=JSON.parse(localStorage.getItem(keys.pending)||'[]');if(!Array.isArray(a))throw Error('未同期データの形式が不正です');return a;}
+ function notify(){window.dispatchEvent(new CustomEvent('boujo-local-change'));}
+ function atomic(values){const old=Object.fromEntries(Object.keys(values).map(k=>[k,localStorage.getItem(k)]));try{for(const [k,v]of Object.entries(values)){if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}}catch(e){for(const [k,v]of Object.entries(old)){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(_){}}throw e;}}
+ function diff(before,after){const changes=[];for(const domain of ['record','catalog']){const field=domain==='record'?'records':'catalog',getId=r=>domain==='record'?r[6]:r[0],a=new Map((before[field]||[]).map(r=>[getId(r),r])),b=new Map((after[field]||[]).map(r=>[getId(r),r]));for(const k of new Set([...a.keys(),...b.keys()]))if(!equal(a.get(k),b.get(k)))changes.push({domain,id:k,before:a.get(k)||null,after:b.get(k)||null});}if(!equal(before.lookup,after.lookup))changes.push({domain:'lookup',id:'lookup',before:before.lookup?.digest||null,after:after.lookup||null});return changes;}
+ function commit(before,after,options={}){
+  const changes=diff(before,after);for(const c of changes){if(c.domain==='catalog'&&options.catalogOriginal&&c.id===options.catalogOriginal[0])c.before=options.catalogOriginal;if(c.domain==='record'&&options.recordOriginal&&c.id===options.recordOriginal[6])c.before=options.recordOriginal;}
+  const values={};if(changes.some(c=>c.domain==='record'))values[keys.records]=JSON.stringify(after.records);if(changes.some(c=>c.domain==='catalog'))values[keys.catalog]=JSON.stringify(after.catalog);if(changes.some(c=>c.domain==='lookup'))values[keys.packed]=after.lookup?JSON.stringify(after.lookup):null;
+  if(Object.hasOwn(options,'lookupRaw'))values[keys.raw]=options.lookupRaw?JSON.stringify(options.lookupRaw):null;
+  if(changes.length)values[keys.pending]=JSON.stringify([...pending(),{id:id(),createdAt:new Date().toISOString(),changes}]);
+  atomic(values);if(changes.length)notify();return changes.length;
+ }
+ function currentValue(state,c){return c.domain==='lookup'?state.lookup?.digest||null:(state[c.domain==='record'?'records':'catalog']||[]).find(r=>(c.domain==='record'?r[6]:r[0])===c.id)||null;}
+ function desired(c){return c.domain==='lookup'?c.after?.digest||null:c.after;}
+ function apply(state,op,project=false){
+  const problems=op.changes.filter(c=>!equal(currentValue(state,c),c.before)&&!equal(currentValue(state,c),desired(c)));
+  if(problems.length&&!project){const e=Error('別の端末で同じ項目が変更されています');e.code='sync-conflict';e.changes=problems.map(c=>({...c,current:clone(currentValue(state,c))}));throw e;}
+  const next=clone(state);for(const c of op.changes){if(c.domain==='lookup'){next.lookup=c.after;continue;}const field=c.domain==='record'?'records':'catalog';next[field]??=[];const index=next[field].findIndex(r=>(c.domain==='record'?r[6]:r[0])===c.id);if(c.after===null){if(index>=0)next[field].splice(index,1);}else if(index>=0)next[field][index]=clone(c.after);else next[field].push(clone(c.after));}
+  return next;
+ }
+ function merge(state,ops=pending()){return ops.reduce((s,op)=>apply(s,op,true),state);}
+ function ack(ids){atomic({[keys.pending]:JSON.stringify(pending().filter(op=>!ids.includes(op.id)))});}
+ function rebase(opId,state,useLocal){const ops=pending();const i=ops.findIndex(o=>o.id===opId);if(i<0)return;if(useLocal)ops[i]={...ops[i],changes:ops[i].changes.map(c=>({...c,before:clone(currentValue(state,c))}))};else{const touched=new Set(ops[i].changes.map(c=>c.domain+':'+c.id));ops.splice(i,1);for(let j=i;j<ops.length;j++){if(ops[j].changes.some(c=>touched.has(c.domain+':'+c.id))){for(const c of ops[j].changes)touched.add(c.domain+':'+c.id);ops[j]={...ops[j],changes:[]};}}}atomic({[keys.pending]:JSON.stringify(ops.filter(o=>o.changes.length))});notify();}
+ function readCloud(data){if((data.minClientVersion||0)>3)throw Error('アプリの更新が必要です');if(!Array.isArray(data.records))throw Error('クラウドの散布履歴が不正です');const catalog=data.catalogJson===undefined?null:JSON.parse(data.catalogJson);if(catalog!==null&&!validCatalog(catalog))throw Error('クラウドの農薬一覧が不正です');const lookup=data.lookup||null;if(lookup&&(lookup.encoding!=='gzip-base64'||typeof lookup.data!=='string'||typeof lookup.digest!=='string'))throw Error('公式検索データの形式が不正です');const normalized=data.records.map(norm);if(!normalized.every(r=>r.slice(0,4).every(v=>typeof v==='string')&&typeof r[6]==='string')||new Set(normalized.map(r=>r[6])).size!==normalized.length)throw Error('散布履歴の形式・記録IDを確認してください');return {records:normalized,catalog,lookup};}
+ function writeCloud(state){const fields={schemaVersion:3,minClientVersion:3,records:state.records.map(recordObject),updatedAt:new Date().toISOString()};if(state.catalog!==null)fields.catalogJson=JSON.stringify(state.catalog);if(state.lookup)fields.lookup=state.lookup;else fields.lookup=null;if(new TextEncoder().encode(JSON.stringify(fields)).length>850000)throw Error('クラウド保存量の上限に近いため保存できません。端末の変更は保持しています');return fields;}
+ function packed(){return JSON.parse(localStorage.getItem(keys.packed)||'null');}
+ function validLookup(value){return value?.version===1&&typeof value.date==='string'&&Array.isArray(value.products)&&value.products.length>0&&value.products.every(p=>typeof p.id==='string'&&typeof p.name==='string'&&typeof p.category==='string'&&typeof p.company==='string'&&typeof p.form==='string'&&Array.isArray(p.ingredients)&&Array.isArray(p.uses));}
+ async function pack(value){if(!validLookup(value))throw Error('公式検索データの形式が不正です');if(typeof CompressionStream==='undefined')throw Error('このブラウザでは検索データを共有できません。Chromeを更新してください');const raw=new TextEncoder().encode(JSON.stringify(value));const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',raw)),b=>b.toString(16).padStart(2,'0')).join('');const bytes=new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());let text='';for(let i=0;i<bytes.length;i+=8192)text+=String.fromCharCode(...bytes.subarray(i,i+8192));return {encoding:'gzip-base64',data:btoa(text),digest,date:value.date,count:value.products.length};}
+ async function unpack(value){if(!value)return null;const bytes=Uint8Array.from(atob(value.data),c=>c.charCodeAt(0));const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();const chunks=[];let size=0;while(true){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>20*1024*1024){await reader.cancel();throw Error('検索データが大きすぎます');}chunks.push(r.value);}const raw=new Uint8Array(size);let offset=0;for(const c of chunks){raw.set(c,offset);offset+=c.length;}const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',raw)),b=>b.toString(16).padStart(2,'0')).join('');if(digest!==value.digest)throw Error('検索データの検証に失敗しました');const decoded=JSON.parse(new TextDecoder().decode(raw));if(!validLookup(decoded))throw Error('公式検索データの内容が不正です');return decoded;}
+ function backupOnce(){if(localStorage.getItem(keys.backup))return;const raw={records:localStorage.getItem(keys.records),catalog:localStorage.getItem(keys.catalog),lookup:localStorage.getItem(keys.raw),savedAt:new Date().toISOString()};atomic({[keys.backup]:JSON.stringify(raw)});}
+ function accept(state,lookupRaw){const values={[keys.records]:JSON.stringify(state.records)};if(state.catalog!==null)values[keys.catalog]=JSON.stringify(state.catalog);if(state.catalog!==null){values[keys.packed]=state.lookup?JSON.stringify(state.lookup):null;values[keys.raw]=lookupRaw?JSON.stringify(lookupRaw):null;}atomic(values);}
+ function migrateLegacy(){const old=JSON.parse(localStorage.getItem('boujo_cloud_test_pending_v1')||'[]');if(!old.length)return;const ops=old.map(o=>({id:id(),createdAt:new Date().toISOString(),changes:[{domain:'record',id:o.id||o.record?.[6],before:null,after:o.type==='delete'?null:norm(o.record)}]}));atomic({[keys.pending]:JSON.stringify([...pending(),...ops]),boujo_cloud_test_pending_v1:'[]'});}
+ return {keys,clone,equal,norm,recordObject,pending,atomic,commit,apply,merge,ack,rebase,readCloud,writeCloud,packed,validLookup,pack,unpack,backupOnce,accept,migrateLegacy,notify,currentValue};
+})();
+// END SHARED CORE
+
 const seedRecords=[["2026-10-10", "コルト顆粒水和剤", "殺虫剤", "IRAC 9B"],["2026-10-03", "ファインセーブフロアブル", "殺虫剤", "IRAC 34"], ["2026-10-03", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-10-03", "バイオキーパー", "その他", "生物農薬"], ["2026-10-01", "グレーシア", "殺虫剤", "IRAC 30"], ["2026-10-01", "レーバスフロアブル", "殺菌剤", "FRAC 40"], ["2026-09-25", "スピノエース顆粒水和剤", "殺虫剤", "IRAC 5"], ["2026-09-24", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-09-24", "マスターピース", "その他", "生物資材"], ["2026-09-22", "ベネビアOD", "殺虫剤", "IRAC 28"], ["2026-09-22", "セイビアーフロアブル20", "殺菌剤", "FRAC 12"], ["2026-09-15", "プレオフロアブル", "殺虫剤", "IRAC UN"], ["2026-09-15", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-09-05", "ファインセーブフロアブル", "殺虫剤", "IRAC 34"], ["2026-08-23", "ディアナSC", "殺虫剤", "IRAC 5"], ["2026-08-23", "アフェットフロアブル", "殺菌剤", "FRAC 7"], ["2026-08-14", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-08-09", "パダンSG水溶剤", "殺虫剤", "IRAC 14"], ["2026-08-09", "メジャーフロアブル", "殺菌剤", "FRAC 11"], ["2026-08-07", "シスルモード", "殺虫剤", "IRAC 30"], ["2026-08-02", "ウララDF", "殺虫剤", "IRAC 29"], ["2026-08-02", "ピシロックフロアブル", "殺菌剤", "FRAC U17"], ["2026-07-26", "グレーシア", "殺虫剤", "IRAC 30"], ["2026-07-26", "レーバスフロアブル", "殺菌剤", "FRAC 40"], ["2026-07-24", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-07-24", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-07-18", "ヨーバルフロアブル", "殺虫剤", "IRAC 28"], ["2026-07-18", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-07-14", "パダンSG水溶剤", "殺虫剤", "IRAC 14"], ["2026-07-12", "ファインセーブフロアブル", "殺虫剤", "IRAC 34"], ["2026-07-12", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-07-09", "ベネビアOD", "殺虫剤", "IRAC 28"], ["2026-07-07", "ディアナSC", "殺虫剤", "IRAC 5"], ["2026-06-20", "アニキ乳剤", "殺虫剤", "IRAC 6"], ["2026-06-20", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-06-13", "ダブルシューターSE", "殺虫剤", "IRAC 5"], ["2026-06-13", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-06-06", "スピノエース顆粒水和剤", "殺虫剤", "IRAC 5"], ["2026-06-06", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-05-30", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-05-30", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-05-23", "コルト顆粒水和剤", "殺虫剤", "IRAC 9B"], ["2026-05-23", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-05-16", "プレオフロアブル", "殺虫剤", "IRAC UN"], ["2026-05-16", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-05-09", "ヨーバルフロアブル", "殺虫剤", "IRAC 28"], ["2026-05-09", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-05-02", "アニキ乳剤", "殺虫剤", "IRAC 6"], ["2026-05-02", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-04-11", "ダントツ水溶剤", "殺虫剤", "IRAC 4A"], ["2026-04-11", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-03-28", "ダブルシューターSE", "殺虫剤", "IRAC 5"], ["2026-03-28", "ランマンフロアブル", "殺菌剤", "FRAC 21"], ["2026-03-21", "コルト顆粒水和剤", "殺虫剤", "IRAC 9B"], ["2026-03-21", "アミスターフロアブル20", "殺菌剤", "FRAC 11"], ["2026-03-14", "スピノエース顆粒水和剤", "殺虫剤", "IRAC 5"], ["2026-03-14", "アリエッティ水和剤", "殺菌剤", "FRAC P7"], ["2026-03-08", "ベストガード水溶剤", "殺虫剤", "IRAC 4A"], ["2026-03-08", "アフェットフロアブル", "殺菌剤", "FRAC 7"], ["2026-02-01", "ディアナSC", "殺虫剤", "IRAC 5"], ["2026-02-01", "メジャーフロアブル", "殺菌剤", "FRAC 11"], ["2026-01-25", "ベネビアOD", "殺虫剤", "IRAC 28"], ["2026-01-25", "ピシロックフロアブル", "殺菌剤", "FRAC U17"], ["2026-01-10", "アグリメック", "殺虫剤", "IRAC 6"], ["2026-01-10", "ランマンフロアブル", "殺菌剤", "FRAC 21"]];
 const seedMaster=[
 ["ベネビアOD","殺虫剤","IRAC 28","所持"],["ベストガード水溶剤","殺虫剤","IRAC 4A","所持"],["ディアナSC","殺虫剤","IRAC 5","所持"],["ウララDF","殺虫剤","IRAC 29","所持"],["シスルモード","殺虫剤","IRAC 30","所持"],["プレオフロアブル","殺虫剤","IRAC UN","所持"],["ダントツ水溶剤","殺虫剤","IRAC 4A","所持"],["アグリメック","殺虫剤","IRAC 6","所持"],["ファインセーブフロアブル","殺虫剤","IRAC 34","所持"],["コルト顆粒水和剤","殺虫剤","IRAC 9B","所持"],["スピノエース顆粒水和剤","殺虫剤","IRAC 5","所持"],["アニキ乳剤","殺虫剤","IRAC 6","所持"],["ダブルシューターSE","殺虫剤","IRAC 5 + 未分類","所持"],["ヨーバルフロアブル","殺虫剤","IRAC 28","所持"],["グレーシア","殺虫剤","IRAC 30","所持"],["パダンSG水溶剤","殺虫剤","IRAC 14","所持"],
@@ -127,12 +173,11 @@ const seedMaster=[
 const key="nougyounisshi_spray_records_cloud_test_v1";
 const catalogKey=key+"_catalog_v1";
 let master=JSON.parse(localStorage.getItem(catalogKey)||"null")||seedMaster.map(p=>p.slice());
-let catalogEditingName=null;
+let catalogEditingName=null,catalogOriginalRow=null;
 function localToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
-function saveCatalog(){localStorage.setItem(catalogKey,JSON.stringify(master));}
 function validCatalog(value){return Array.isArray(value)&&value.every(p=>Array.isArray(p)&&p.length>=4&&p.slice(0,4).every(v=>typeof v==="string")&&["殺虫剤","殺菌剤","その他"].includes(p[1])&&(!p[4]||(typeof p[4]==="object"&&Array.isArray(p[4].targets)&&p[4].targets.every(t=>typeof t==="string")&&(p[4].phi===null||(Number.isInteger(p[4].phi)&&p[4].phi>=0))&&typeof p[4].crop==="string"&&typeof p[4].source==="string"&&typeof p[4].confirmed==="boolean")))&&new Set(value.map(p=>p[0])).size===value.length;}
-function clearCatalogForm(){resetLookupSelection();catalogEditingName=null;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();for(const id of ["catalogName","catalogGroup","catalogCrop","catalogTargets","catalogPhi","catalogSource"])document.getElementById(id).value="";document.getElementById("catalogName").disabled=false;document.getElementById("catalogConfirmed").checked=false;document.getElementById("catalogHeading").textContent="農薬を追加";}
-function editPesticide(index){resetLookupSelection();const p=master[index],m=p[4]||{};catalogEditingName=p[0];for(const f of extraFields)document.getElementById("catalog"+f).value=m.details?.[f]||"";document.getElementById("catalogName").value=p[0];document.getElementById("catalogName").disabled=false;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();document.getElementById("catalogCategory").value=p[1];for(const [id,value] of [["catalogGroup",p[2]],["catalogCrop",m.crop],["catalogTargets",m.targets?.join("、")],["catalogPhi",m.phi],["catalogSource",m.source]])document.getElementById(id).value=value??"";document.getElementById("catalogConfirmed").checked=!!m.confirmed;document.getElementById("catalogHeading").textContent="農薬の登録情報を編集";document.getElementById("catalogHeading").scrollIntoView({block:"center"});}
+function clearCatalogForm(){resetLookupSelection();catalogEditingName=null;catalogOriginalRow=null;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();for(const id of ["catalogName","catalogGroup","catalogCrop","catalogTargets","catalogPhi","catalogSource"])document.getElementById(id).value="";document.getElementById("catalogName").disabled=false;document.getElementById("catalogConfirmed").checked=false;document.getElementById("catalogHeading").textContent="農薬を追加";}
+function editPesticide(index){resetLookupSelection();const p=master[index],m=p[4]||{};catalogEditingName=p[0];catalogOriginalRow=BoujoSync.clone(p);for(const f of extraFields)document.getElementById("catalog"+f).value=m.details?.[f]||"";document.getElementById("catalogName").value=p[0];document.getElementById("catalogName").disabled=false;document.getElementById("catalogRenameHistory").checked=false;updateRenamePreview();document.getElementById("catalogCategory").value=p[1];for(const [id,value] of [["catalogGroup",p[2]],["catalogCrop",m.crop],["catalogTargets",m.targets?.join("、")],["catalogPhi",m.phi],["catalogSource",m.source]])document.getElementById(id).value=value??"";document.getElementById("catalogConfirmed").checked=!!m.confirmed;document.getElementById("catalogHeading").textContent="農薬の登録情報を編集";document.getElementById("catalogHeading").scrollIntoView({block:"center"});}
 document.getElementById("cancelPesticide").onclick=clearCatalogForm;
 document.getElementById("savePesticide").onclick=()=>{
  const val=id=>document.getElementById(id).value.trim(),name=val("catalogName"),raw=val("catalogPhi"),phi=raw===""?null:Number(raw);
@@ -148,26 +193,14 @@ document.getElementById("savePesticide").onclick=()=>{
  const changed=changeHistory?records.filter(r=>r[1]===oldName).map(r=>[r[0],name,...r.slice(2)]):[];
  const nextRecords=changeHistory?records.map(r=>r[1]===oldName?[r[0],name,...r.slice(2)]:r):records;
  const selections=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value===oldName?name:x.value);
- try{persistRenamedCatalog(next,nextRecords,changed.length>0);}catch(e){alert("保存できません："+e.message);return;}
- master=next;records=nextRecords;
- changed.forEach(record=>queueCloudOperation({type:"upsert",record}));
+ try{commitSharedUI({catalog:next,records:nextRecords},{catalogOriginal:catalogOriginalRow});}catch(e){alert("保存できません："+e.message);return;}
  clearCatalogForm();render();document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=selections.includes(x.value));
  document.getElementById("adviceResult").innerHTML="";document.getElementById("catalogMessage").textContent=renaming?oldName+" → "+name+"に変更しました。"+(changeHistory?changed.length+"件の散布履歴の名称も修正しました。":"過去の散布履歴の名称はそのままです。"):name+"を保存しました。";
 };
-function deletePesticide(index){const p=master[index];if(!confirm(`「${p[0]}」を農薬一覧から削除しますか？過去の散布履歴は残ります。`))return;const next=master.filter((_,i)=>i!==index);try{localStorage.setItem(catalogKey,JSON.stringify(next));}catch(e){alert("保存できません："+e.message);return;}master=next;if(catalogEditingName===p[0])clearCatalogForm();render();document.getElementById("adviceResult").innerHTML="";}
+function deletePesticide(index){const p=master[index];if(!confirm(`「${p[0]}」を農薬一覧から削除しますか？過去の散布履歴は残ります。`))return;const next=master.filter((_,i)=>i!==index);try{commitSharedUI({catalog:next});}catch(e){alert("保存できません："+e.message);return;}if(catalogEditingName===p[0])clearCatalogForm();render();document.getElementById("adviceResult").innerHTML="";}
 let records=JSON.parse(localStorage.getItem(key)||"null")||seedRecords.map((r,i)=>[...r,null,null,"seed-"+i]);
 records=records.map((r,i)=>r.length>6&&r[6]?r:[...r.slice(0,6),"legacy-"+i]);
-let cloudBridge=null;
-let editingIndex=null;
-function queueCloudOperation(op){
- const panel=document.getElementById("syncDiagnostic");
- const stamp=new Date().toLocaleTimeString();
- if(!cloudBridge){panel.textContent=stamp+"：端末に保存済み／同期プログラムが未起動のため送信できません。";return;}
- panel.textContent=stamp+"：端末に保存済み／同期処理へ変更を渡しました。";
- try{cloudBridge.queue(op);}catch(e){panel.textContent=stamp+"：端末に保存済み／送信処理でエラー："+e.message;return;}
- setTimeout(()=>{panel.textContent+=" 同期状態："+document.getElementById("cloudStatus").textContent;},2000);
-}
-function saveData(){localStorage.setItem(key,JSON.stringify(records));}
+let editingIndex=null,editingOriginalRecord=null;
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function showTab(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));render();}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
@@ -176,16 +209,6 @@ function updateRenamePreview(){
  document.getElementById('catalogRenameHistoryLabel').classList.toggle('hidden',!renaming);
  document.getElementById('catalogRenamePreview').textContent=renaming?`名称変更：${from} → ${to||'（未入力）'}。${count}件の散布履歴に同じ名称があります。履歴も直す場合は下のチェックを入れてください。`:from?'農薬名も編集できます。公式の候補を選ぶと、剤型まで含めた名称と登録情報を入力できます。':'';
 }
-function persistRenamedCatalog(next,nextRecords,changeHistory){
- const beforeCatalog=localStorage.getItem(catalogKey),beforeRecords=localStorage.getItem(key);
- try{if(changeHistory)localStorage.setItem(key,JSON.stringify(nextRecords));localStorage.setItem(catalogKey,JSON.stringify(next));}
- catch(error){
-  // Do not update in-memory data or queue cloud operations unless both local writes succeeded.
-  try{if(changeHistory){if(beforeRecords===null)localStorage.removeItem(key);else localStorage.setItem(key,beforeRecords);}if(beforeCatalog===null)localStorage.removeItem(catalogKey);else localStorage.setItem(catalogKey,beforeCatalog);}catch(rollbackError){alert('保存を元に戻せませんでした。画面を閉じずにバックアップを保存してください。');}
-  throw error;
- }
-}
-
 function catalogCompleteness(m){
  if(!m?.crop)return '登録作物を選択してください';
  if(!m.targets?.length)return '対象害虫・病害を選択してください';
@@ -212,8 +235,8 @@ function setCatalogConfirmation(index,checked){
  const p=master[index];if(!p)return;
  const missing=catalogCompleteness(p[4]);if(checked&&missing){alert(missing);render();return;}
  const next=master.map((row,i)=>i===index?[...row.slice(0,4),{...row[4],confirmed:checked}]:row);
- try{localStorage.setItem(catalogKey,JSON.stringify(next));}catch(e){alert('保存できません：'+e.message);render();return;}
- master=next;document.getElementById('adviceResult').innerHTML='';render();
+ try{commitSharedUI({catalog:next});}catch(e){alert('保存できません：'+e.message);render();return;}
+ document.getElementById('adviceResult').innerHTML='';render();
  document.getElementById('catalogMessage').textContent=p[0]+(checked?'：日数判定に使用する設定を保存しました。':'：日数判定の使用を解除しました。');
 }
 function loadCatalogDetails(index){
@@ -248,19 +271,27 @@ const targetDefaults={
 };
 function updateAutoTargets(){const names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value);const vals=names.map(n=>`${n}：${master.find(p=>p[0]===n)?.[4]?.targets?.join("、")||targetDefaults[n]||"対象害虫・病害はラベルで確認"}`);document.getElementById("target").value=vals.join("\n");}
 function prefill(name,target){clearEditMode();showTab("register");document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===name);updateAutoTargets();if(target)document.getElementById("target").value=target;document.getElementById("date").value=document.getElementById("plannedSpray").value||localToday();}
-function clearEditMode(){editingIndex=null;document.getElementById("save").textContent="散布を登録する";document.getElementById("deleteRecord").classList.add("hidden");document.getElementById("cancelEdit").classList.add("hidden");document.getElementById("saved").innerHTML="";document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false);document.getElementById("target").value="";document.getElementById("memo").value="";}
-function editRecord(index){const r=records[index];if(!r)return;editingIndex=index;showTab("register");document.getElementById("date").value=r[0];document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===r[1]);document.getElementById("target").value=r[4]||targetDefaults[r[1]]||"";document.getElementById("memo").value=r[5]||"";document.getElementById("save").textContent="修正を保存する";document.getElementById("deleteRecord").classList.remove("hidden");document.getElementById("cancelEdit").classList.remove("hidden");document.getElementById("saved").innerHTML=`<div class="success">編集中：${esc(r[0])}｜${esc(r[1])}<br>修正を保存すると既存記録を上書きします。</div>`;}
+function clearEditMode(){editingIndex=null;editingOriginalRecord=null;document.getElementById("save").textContent="散布を登録する";document.getElementById("deleteRecord").classList.add("hidden");document.getElementById("cancelEdit").classList.add("hidden");document.getElementById("saved").innerHTML="";document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false);document.getElementById("target").value="";document.getElementById("memo").value="";}
+function editRecord(index){const r=records[index];if(!r)return;editingIndex=index;editingOriginalRecord=BoujoSync.clone(r);showTab("register");document.getElementById("date").value=r[0];document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=x.value===r[1]);document.getElementById("target").value=r[4]||targetDefaults[r[1]]||"";document.getElementById("memo").value=r[5]||"";document.getElementById("save").textContent="修正を保存する";document.getElementById("deleteRecord").classList.remove("hidden");document.getElementById("cancelEdit").classList.remove("hidden");document.getElementById("saved").innerHTML=`<div class="success">編集中：${esc(r[0])}｜${esc(r[1])}<br>修正を保存すると既存記録を上書きします。</div>`;}
 window.editRecord=editRecord;
-document.getElementById("save").onclick=()=>{
- const d=document.getElementById("date").value,names=[...document.querySelectorAll(".pesticide-check:checked")].map(x=>x.value),t=document.getElementById("target").value.trim()||"未入力",m=document.getElementById("memo").value.trim();
- if(!d||!names.length){alert("散布日と農薬（1種類以上）を選択してください");return}
- if(editingIndex!==null){if(names.length!==1){alert("編集中の記録は農薬1種類分です。複数種類に変更する場合は、各農薬の記録を個別に編集してください。");return}const p=master.find(x=>x[0]===names[0])||[records[editingIndex][1],records[editingIndex][2],records[editingIndex][3]];records[editingIndex]=[d,names[0],p?.[1]||"不明",p?.[2]||"不明",t,m,records[editingIndex][6]];saveData();queueCloudOperation({type:"upsert",record:records[editingIndex]});clearEditMode();document.getElementById("saved").innerHTML='<div class="success">修正を保存しました。防除判断にも反映されます。</div>';render();return;}
- names.forEach(n=>{const p=master.find(x=>x[0]===n);{const r=[d,n,p?.[1]||"不明",p?.[2]||"不明",t,m,crypto.randomUUID()];records.push(r);queueCloudOperation({type:"upsert",record:r});}}); saveData();
- document.getElementById("saved").innerHTML=`<div class="success"><b>${esc(d)}｜${names.map(esc).join("、")}</b><br>${names.length}種類の散布記録を登録しました。防除履歴と系統判定に反映されます。</div>`;
- document.getElementById("memo").value=""; document.querySelectorAll(".pesticide-check").forEach(x=>x.checked=false); render();
+document.getElementById('save').onclick=()=>{
+ const d=document.getElementById('date').value,names=[...document.querySelectorAll('.pesticide-check:checked')].map(x=>x.value),t=document.getElementById('target').value.trim()||'未入力',m=document.getElementById('memo').value.trim();
+ if(!d||!names.length){alert('散布日と農薬（1種類以上）を選択してください');return;}
+ try{
+ if(editingIndex!==null){
+  if(editingIndex<0||!editingOriginalRecord){alert('編集中の記録が削除されています。編集をキャンセルしてください');return;}
+  if(names.length!==1){alert('編集中の記録は農薬1種類分です。各農薬の記録を個別に編集してください。');return;}
+  const previous=editingOriginalRecord,p=master.find(x=>x[0]===names[0])||[previous[1],previous[2],previous[3]],updated=[d,names[0],p[1],p[2],t,m,previous[6]];
+  commitSharedUI({records:records.map(r=>r[6]===previous[6]?updated:r)},{recordOriginal:previous});clearEditMode();render();document.getElementById('saved').textContent='修正を端末に保存しました。クラウド同期状態はホームで確認できます。';return;
+ }
+ const additions=names.map(n=>{const p=master.find(x=>x[0]===n);return [d,n,p?.[1]||'不明',p?.[2]||'不明',t,m,crypto.randomUUID()];});commitSharedUI({records:[...records,...additions]});document.getElementById('memo').value='';document.querySelectorAll('.pesticide-check').forEach(x=>x.checked=false);render();document.getElementById('saved').textContent=names.length+'種類を端末に保存しました。クラウドへの送信状況はホームで確認できます。';
+ }catch(e){alert('保存できません：'+e.message);}
 };
-document.getElementById("deleteRecord").onclick=()=>{if(editingIndex===null)return;const r=records[editingIndex];if(!confirm(`${r[0]}の「${r[1]}」を削除しますか？`))return;records.splice(editingIndex,1);saveData();queueCloudOperation({type:"delete",id:r[6]});clearEditMode();render();showTab("home");};
-document.getElementById("cancelEdit").onclick=()=>{clearEditMode();render();showTab("home");};
+document.getElementById('deleteRecord').onclick=()=>{
+ if(editingIndex===null||editingIndex<0||!editingOriginalRecord)return;const r=editingOriginalRecord;if(!confirm(`${r[0]}の「${r[1]}」を削除しますか？`))return;
+ try{commitSharedUI({records:records.filter(x=>x[6]!==r[6])},{recordOriginal:r});clearEditMode();showTab('home');}catch(e){alert('削除を保存できません：'+e.message);}
+};
+document.getElementById('cancelEdit').onclick=()=>{clearEditMode();render();showTab('home');};
 
 function dateInterval(spray,harvest){if(!spray||!harvest)return null;const a=Date.parse(spray+"T00:00:00Z"),b=Date.parse(harvest+"T00:00:00Z");return Number.isFinite(a)&&Number.isFinite(b)?(b-a)/86400000:null;}
 function adviceReason(p,target,days){const m=p[4],missing=catalogCompleteness(m);if(missing)return "使用条件の入力待ち："+missing;if(!m.confirmed)return "使用条件の確認待ち：農薬一覧で内容を確認してください";if(!m.targets.includes(target))return "対象害虫・病害が登録対象と一致しません";if(m.phi>days)return `収穫${m.phi}日前までのため日数不足`;return "";}
@@ -275,22 +306,12 @@ function showAdvice(){
 document.getElementById("showAdvice").onclick=showAdvice;
 document.getElementById("plannedSpray").value=localToday();
 for(const id of ["plannedSpray","harvest","adviceTarget"])document.getElementById(id).oninput=()=>{document.getElementById("adviceResult").innerHTML="";};
-document.getElementById("exportBackup").onclick=()=>{
- const payload={app:"nougyounisshi-boujo",version:2,exportedAt:new Date().toISOString(),records,catalog:master};
- const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
- const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="防除アドバイザー_散布記録_"+new Date().toLocaleDateString("sv-SE")+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-};
+document.getElementById("exportBackup").onclick=()=>downloadSharedJSON({app:"nougyounisshi-boujo",version:3,exportedAt:new Date().toISOString(),records,catalog:master,lookup:lookupDB},"防除アドバイザー_全データ_"+localToday()+".json");
 document.getElementById("importBackup").onchange=async e=>{
  const f=e.target.files?.[0];if(!f)return;
- try{
-  const data=JSON.parse(await f.text());
-  if(data.app!=="nougyounisshi-boujo"||!Array.isArray(data.records)||!data.records.every(r=>Array.isArray(r)&&r.length>=4&&r.slice(0,4).every(v=>typeof v==="string")))throw Error("対応するバックアップファイルではありません");
-  if(data.catalog!==undefined&&!validCatalog(data.catalog))throw Error("農薬一覧の形式が不正です");
-  if(!confirm(`バックアップの${data.records.length}件で現在の${records.length}件を置き換えますか？${data.catalog!==undefined?"農薬一覧も置き換えます。":"農薬一覧はそのままです。"}`))return;
-  if(data.catalog!==undefined){localStorage.setItem(catalogKey,JSON.stringify(data.catalog));master=data.catalog;}
-  clearCatalogForm();document.getElementById("adviceResult").innerHTML="";
-  records=data.records.map((r,i)=>[...r.slice(0,6),"import-"+i]);saveData();cloudBridge?.onRestore();clearEditMode();render();alert("復元しました（"+records.length+"件）");
- }catch(err){alert("復元できません："+err.message)}finally{e.target.value=""}
+ try{const data=JSON.parse(await f.text());if(data.app!=="nougyounisshi-boujo"||!Array.isArray(data.records)||!data.records.every(r=>Array.isArray(r)&&r.length>=4&&r.slice(0,4).every(v=>typeof v==="string")))throw Error("対応するバックアップではありません");if(data.catalog!==undefined&&!validCatalog(data.catalog))throw Error("農薬一覧の形式が不正です");if(data.lookup&&!BoujoSync.validLookup(data.lookup))throw Error("公式検索データが不正です");if(!confirm("このバックアップで現在の保存内容を置き換え、ログイン後はクラウドにも反映します。復元前のバックアップを保存しましたか？"))return;
+ const next={records:data.records.map(BoujoSync.norm),catalog:data.catalog??master,lookup:Object.hasOwn(data,"lookup")?(data.lookup?await BoujoSync.pack(data.lookup):null):BoujoSync.packed()};const options=Object.hasOwn(data,"lookup")?{lookupRaw:data.lookup}:{};commitSharedUI(next,options);clearCatalogForm();clearEditMode();render();alert("復元データを端末に保存しました。クラウドの同期状態をホームで確認してください。");
+ }catch(error){alert("復元できません："+error.message);}finally{e.target.value="";}
 };
 render();
 
@@ -361,7 +382,7 @@ document.getElementById('importLookup').onclick=async()=>{
  if(!files.length){status.textContent='公式ZIPまたはCSVを3つ選択してください';return;}
  btn.disabled=true;status.textContent='公式データを取り込んでいます…';
  try{const extracted=[];for(const f of files){if(f.size>20*1024*1024)throw Error('ファイルが大きすぎます');extracted.push(...await officialFiles(f));}
-  const next=buildOfficialLookup(extracted);localStorage.setItem(lookupKey,JSON.stringify(next));lookupDB=next;resetLookupSelection();updateLookupStatus();lookupSearch();
+  const next=buildOfficialLookup(extracted),packed=await BoujoSync.pack(next);commitSharedUI({lookup:packed},{lookupRaw:next});resetLookupSelection();updateLookupStatus();lookupSearch();
  }catch(e){status.textContent='取り込めませんでした：'+e.message+'。取り込み前のデータは保持しています。';}finally{btn.disabled=false;}
 };
 function phiFromTiming(t){t=t.normalize('NFKC').trim();if(t==='収穫前日まで')return 1;if(t==='収穫当日まで')return 0;const m=t.match(/^収穫(\d+)日前まで$/);return m?Number(m[1]):null;}
@@ -399,8 +420,29 @@ document.getElementById('lookupSearchButton').onclick=lookupSearch;
 // Revoking confirmation on edits avoids carrying a previous confirmation to new conditions.
 for(const id of ['catalogCategory','catalogGroup','catalogCrop','catalogTargets','catalogPhi','catalogSource'])document.getElementById(id).addEventListener('input',()=>{document.getElementById('catalogConfirmed').checked=false;});
 
+
+function getSharedUI(){return {records:BoujoSync.clone(records),catalog:BoujoSync.clone(master),lookup:BoujoSync.packed()};}
+function getLookupUI(){return lookupDB;}
+function commitSharedUI(next,options={}){
+ const after={...getSharedUI(),...next};BoujoSync.commit(getSharedUI(),after,options);records=after.records;master=after.catalog;if(Object.hasOwn(options,'lookupRaw')){lookupDB=options.lookupRaw;updateLookupStatus();}
+ document.getElementById('syncDiagnostic').textContent='端末に保存しました。全データの同期待ち：'+BoujoSync.pending().length+'件';
+}
+function applySharedUI(state,raw){
+ const editingId=editingOriginalRecord?.[6];records=BoujoSync.clone(state.records);if(state.catalog!==null){master=BoujoSync.clone(state.catalog);lookupDB=raw;updateLookupStatus();}
+ records.sort((a,b)=>b[0].localeCompare(a[0]));if(editingId)editingIndex=records.findIndex(r=>r[6]===editingId);
+ render();document.getElementById('adviceResult').innerHTML='';if(editingId&&editingIndex<0)document.getElementById('saved').textContent='編集中の記録が別端末で削除されました。編集をキャンセルして内容を確認してください。';
+}
+setTimeout(()=>{if(BoujoSync.adapterVersion!==3)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
+window.getSharedUI=getSharedUI;window.getLookupUI=getLookupUI;window.applySharedUI=applySharedUI;
+try{BoujoSync.migrateLegacy();}catch(e){document.getElementById('cloudStatus').textContent='以前の未同期データを確認できません：'+e.message;}
+document.getElementById('downloadLocalCopy').onclick=()=>{
+ try{const old=JSON.parse(localStorage.getItem(BoujoSync.keys.backup)||'null');if(!old){alert('共有開始前の控えはまだありません');return;}const data={app:'nougyounisshi-boujo',version:3,records:JSON.parse(old.records||'null')||seedRecords.map((r,i)=>[...r,null,null,'seed-'+i]),catalog:JSON.parse(old.catalog||'null')||seedMaster,lookup:JSON.parse(old.lookup||'null'),exportedAt:old.savedAt};downloadSharedJSON(data,'防除アドバイザー_共有開始前の控え.json');}catch(e){alert('控えを保存できません：'+e.message);}
+};
+function downloadSharedJSON(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+
 </script>
-<script type="module" src="./boujo-cloud-sync.js?v=2"></script></body></html>
+<script type="module" src="./boujo-cloud-sync.js?v=3-fullsync-20261102" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script></body></html>
+
 
 
 
