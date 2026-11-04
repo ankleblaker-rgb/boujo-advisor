@@ -1,0 +1,85 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#125c3c"><title>農業日誌AI</title></head><body><div id="farm-entry-preview">
+<style>
+#farm-entry-preview{padding:20px 10px;color-scheme:light;font-family:system-ui,-apple-system,'Noto Sans JP',sans-serif}#farm-entry-preview *{box-sizing:border-box}#farm-entry-preview .farm-window{max-width:460px;margin:0 auto;background:#fff;color:#18352a;border:1px solid #d8e6de;border-radius:4px;overflow:hidden;box-shadow:0 10px 32px #18352a0d}#farm-entry-preview .farm-header{padding:22px 22px 18px;border-bottom:1px solid #d8e6de}#farm-entry-preview .farm-name{font-size:21px;font-weight:700;letter-spacing:.03em;color:#16834b}#farm-entry-preview .farm-sub{font-size:12px;color:#52695b;margin-top:5px}#farm-entry-preview .farm-main{padding:24px 20px}#farm-entry-preview .farm-date{font-size:13px;color:#52695b;margin:0 0 9px}#farm-entry-preview h2{font-size:24px;line-height:1.4;margin:0 0 22px;font-weight:700;color:#18352a}#farm-entry-preview .farm-options{display:grid;gap:12px}#farm-entry-preview .farm-option{display:flex;align-items:center;gap:15px;background:#fff;color:#18352a;border:1px solid #b8d2c2;border-radius:4px;min-height:94px;width:100%;padding:18px 16px;text-align:left;font:inherit}#farm-entry-preview .farm-option:hover{background:#f3f9f5}#farm-entry-preview .farm-icon{display:grid;place-items:center;width:42px;height:42px;flex-shrink:0;background:#edf7f0;color:#16834b;border-radius:4px}#farm-entry-preview .farm-icon svg{width:25px;height:25px}#farm-entry-preview .farm-text{flex:1;min-width:0}#farm-entry-preview .farm-text strong{display:block;font-size:20px;font-weight:700}#farm-entry-preview .farm-text small{display:block;font-size:12px;color:#52695b;margin-top:5px;line-height:1.6}#farm-entry-preview .farm-chevron{color:#16834b;width:20px;height:20px;flex-shrink:0}#farm-entry-preview .farm-footer{display:flex;border-top:1px solid #d8e6de;padding:10px 14px;gap:10px;background:#fff}#farm-entry-preview .farm-footer button{min-height:48px;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:4px;background:#fff;color:#52695b;font:inherit;font-size:13px}#farm-entry-preview .farm-footer button:first-child{background:#edf7f0;color:#16834b}#farm-entry-preview .farm-footer svg{width:19px;height:19px}#farm-entry-preview .farm-back{background:#fff;color:#16834b;border:0;min-height:44px;padding:0;font:inherit;font-size:14px;margin:0 0 12px}#farm-entry-preview .farm-detail{background:#f3f9f5;border-left:3px solid #16834b;padding:16px;font-size:14px;line-height:1.9;margin-top:12px}#farm-entry-preview .farm-detail p{margin:0}#farm-entry-preview .farm-caption{font-size:12px;color:#64766c;margin:20px 0 0}#farm-entry-preview [hidden]{display:none!important}@media(max-width:360px){#farm-entry-preview{padding:8px 0}#farm-entry-preview .farm-main{padding:20px 14px}#farm-entry-preview .farm-option{gap:10px;padding:16px 12px}#farm-entry-preview .farm-text strong{font-size:19px}}
+</style>
+<div class="farm-window">
+<header class="farm-header"><div class="farm-name">農業日誌AI</div><div class="farm-sub">水耕小ネギ・農場管理</div></header>
+<main class="farm-main">
+<div id="farm-home-panel"><p id="farm-home-date" class="farm-date"></p><h2>何を記録しますか？</h2>
+<div class="farm-options">
+<a class="farm-option" href="https://ankleblaker-rgb.github.io/boujo-advisor/cultivation.html"><span class="farm-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V10M12 14C4 15 3 8 3 5c7 0 10 4 9 9ZM12 10c0-6 5-8 9-8 0 5-2 10-9 8Z"/></svg></span><span class="farm-text"><strong>栽培</strong><small>は種・定植・収穫を記録</small></span><svg class="farm-chevron" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></a>
+<a class="farm-option" href="https://ankleblaker-rgb.github.io/"><span class="farm-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3C7 7 3 9 3 13a5 5 0 0 0 10 0c0-4-4-6-5-10ZM17 7c-1 3-3 4-3 7a4 4 0 0 0 8 0c0-3-4-5-5-7Z"/></svg></span><span class="farm-text"><strong>環境・日誌</strong><small>養液測定・気象・日々の気づき</small></span><svg class="farm-chevron" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></a>
+<a class="farm-option" href="https://ankleblaker-rgb.github.io/boujo-advisor/boujo-cloud-test.html"><span class="farm-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg></span><span class="farm-text"><strong>防除</strong><small>散布記録・次の散布・効果の確認</small></span><svg class="farm-chevron" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></a>
+<a class="farm-option" href="https://ankleblaker-rgb.github.io/boujo-advisor/shipping.html"><span class="farm-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h11v13H3ZM14 10h4l3 4v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><span class="farm-text"><strong>出荷・売上</strong><small>出荷数・単価・売上を記録</small></span><svg class="farm-chevron" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></a>
+</div></div>
+<section id="farm-settings-panel" hidden aria-labelledby="farm-settings-title"><h2 id="farm-settings-title">設定・バックアップ</h2><p class="farm-help">各アプリのデータ管理画面からバックアップできます。</p><div class="farm-settings-links"><a href="https://ankleblaker-rgb.github.io/boujo-advisor/cultivation.html">栽培を開く<span>›</span></a><a href="https://ankleblaker-rgb.github.io/">環境・日誌を開く<span>›</span></a><a href="https://ankleblaker-rgb.github.io/boujo-advisor/boujo-cloud-test.html">防除を開く<span>›</span></a><a href="https://ankleblaker-rgb.github.io/boujo-advisor/shipping.html">出荷・売上を開く<span>›</span></a></div><p class="farm-help">栽培・出荷は「共有保存・バックアップ」、環境・日誌は「データ管理」、防除は「同期・バックアップ・設定」を開いてください。</p></section></main>
+<footer class="farm-footer"><button type="button" id="farm-home"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg>ホーム</button><button type="button" id="farm-settings"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="8" cy="6" r="2" fill="white"/><circle cx="16" cy="12" r="2" fill="white"/><circle cx="9" cy="18" r="2" fill="white"/></svg>設定・バックアップ</button></footer>
+</div>
+
+</div>
+<style>
+#farm-entry-preview .farm-header{background:#125c3c;border-bottom:5px solid #7cc79b;padding:27px 22px 24px}
+#farm-entry-preview .farm-name{font-size:25px;letter-spacing:.05em;color:#fff}
+#farm-entry-preview .farm-sub{color:#d5eee0;font-size:13px;margin-top:7px}
+#farm-entry-preview .farm-main{background:#f3f7f4;padding:25px 18px 28px}
+#farm-entry-preview h2{font-size:25px;margin-bottom:23px}
+#farm-entry-preview .farm-date{color:#52695b;margin-bottom:10px}
+#farm-entry-preview .farm-options{gap:15px}
+#farm-entry-preview .farm-option{border:1px solid #c8d9cd;border-left:5px solid #16834b;padding:20px 14px;min-height:104px;box-shadow:0 3px 0 #18352a08;gap:14px}
+#farm-entry-preview .farm-option:hover{background:#eaf5ee;border-color:#16834b}
+#farm-entry-preview .farm-icon{width:46px;height:46px;border-radius:0;background:#16834b;color:#fff}
+#farm-entry-preview .farm-icon svg{width:27px;height:27px;stroke-width:1.8px}
+#farm-entry-preview .farm-text strong{font-size:22px;letter-spacing:.02em}
+#farm-entry-preview .farm-text small{font-size:12px;color:#52695b;margin-top:7px}
+#farm-entry-preview .farm-chevron{color:#125c3c}
+#farm-entry-preview .farm-footer{border-top:1px solid #c8d9cd;padding:12px;background:#fff}
+#farm-entry-preview .farm-footer button:first-child{background:#125c3c;color:#fff}
+#farm-entry-preview .farm-footer button{font-weight:600}
+#farm-entry-preview .farm-back{background:transparent}
+#farm-entry-preview .farm-detail{background:#fff}
+@media(max-width:360px){#farm-entry-preview .farm-main{padding:22px 12px}#farm-entry-preview .farm-option{padding:18px 10px;gap:10px}#farm-entry-preview .farm-icon{width:40px;height:44px}#farm-entry-preview .farm-text strong{font-size:20px}#farm-entry-preview .farm-text small{font-size:12px}}
+</style>
+<style>
+#farm-entry-preview .farm-header{padding:13px 18px 12px;border-bottom-width:3px}
+#farm-entry-preview .farm-name{font-size:21px;line-height:1.3}
+#farm-entry-preview .farm-sub{font-size:11px;margin-top:3px;line-height:1.4}
+#farm-entry-preview .farm-main{padding:15px 14px 16px}
+#farm-entry-preview .farm-date{font-size:12px;margin:0 0 5px;line-height:1.4}
+#farm-entry-preview h2{font-size:21px;line-height:1.35;margin:0 0 14px}
+#farm-entry-preview .farm-options{gap:9px}
+#farm-entry-preview .farm-option{min-height:78px;padding:12px 12px;gap:12px}
+#farm-entry-preview .farm-icon{width:38px;height:38px}
+#farm-entry-preview .farm-icon svg{width:24px;height:24px}
+#farm-entry-preview .farm-text strong{font-size:20px;line-height:1.25}
+#farm-entry-preview .farm-text small{font-size:11px;line-height:1.5;margin-top:4px}
+#farm-entry-preview .farm-footer{padding:6px 10px;gap:8px}
+#farm-entry-preview .farm-footer button{min-height:44px;font-size:12px}
+@media(max-width:360px){#farm-entry-preview .farm-header{padding:12px 14px}#farm-entry-preview .farm-main{padding:14px 10px}#farm-entry-preview .farm-option{padding:11px 9px;gap:9px}#farm-entry-preview .farm-text strong{font-size:19px}}
+</style>
+
+<style>
+html,body{margin:0;padding:0;background:#fff;color-scheme:light;height:100%}
+#farm-entry-preview{padding:0;background:#fff}
+#farm-entry-preview .farm-window{border:0;box-shadow:none;height:100vh;height:100svh;display:flex;flex-direction:column}
+#farm-entry-preview .farm-header{flex:none;padding:clamp(15px,3svh,25px) 18px clamp(14px,2.6svh,22px)}
+#farm-entry-preview .farm-name{font-size:clamp(22px,3.5svh,26px);line-height:1.3}
+#farm-entry-preview .farm-sub{font-size:12px;margin-top:5px}
+#farm-entry-preview .farm-main{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:clamp(14px,2.4svh,22px) 14px 14px}
+#farm-entry-preview #farm-home-panel{flex:1;display:flex;flex-direction:column;min-height:min-content}
+#farm-entry-preview .farm-date{font-size:13px;margin-bottom:7px}
+#farm-entry-preview h2{font-size:23px;margin-bottom:clamp(14px,2.6svh,24px)}
+#farm-entry-preview .farm-options{flex:1;display:grid;grid-template-rows:repeat(4,minmax(78px,1fr));gap:clamp(10px,1.6svh,15px)}
+#farm-entry-preview .farm-option{height:100%;min-height:78px;padding:14px 13px;gap:13px}
+#farm-entry-preview .farm-icon{width:clamp(38px,6.4svh,48px);height:clamp(38px,6.4svh,48px)}
+#farm-entry-preview .farm-icon svg{width:27px;height:27px}
+#farm-entry-preview .farm-text strong{font-size:22px;line-height:1.3}
+#farm-entry-preview .farm-text small{font-size:12px;margin-top:6px;line-height:1.5}
+#farm-entry-preview .farm-footer{flex:none;padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+#farm-entry-preview .farm-footer button{min-height:46px;font-size:12px}
+@media(max-width:360px){#farm-entry-preview .farm-option{gap:10px;padding-left:10px;padding-right:10px}#farm-entry-preview .farm-main{padding-left:10px;padding-right:10px}#farm-entry-preview .farm-text strong{font-size:21px}}
+</style>
+<style>
+html,body{margin:0;padding:0}#farm-entry-preview a{text-decoration:none}#farm-entry-preview button,#farm-entry-preview a{cursor:pointer}#farm-entry-preview .farm-help{font-size:14px;line-height:1.8;color:#52695b}#farm-entry-preview .farm-settings-links{display:grid;gap:10px}#farm-entry-preview .farm-settings-links a{display:flex;justify-content:space-between;align-items:center;min-height:54px;padding:14px;background:white;border:1px solid #b8d2c2;color:#16834b;border-radius:4px}#farm-entry-preview .farm-footer button[aria-current="page"]{background:#125c3c;color:white}#farm-entry-preview .farm-footer button:not([aria-current="page"]){background:white;color:#52695b}
+</style><script>
+(()=>{const home=document.getElementById('farm-home-panel'),settings=document.getElementById('farm-settings-panel'),a=document.getElementById('farm-home'),b=document.getElementById('farm-settings');document.getElementById('farm-home-date').textContent=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'long',day:'numeric',weekday:'long'}).format(new Date());function show(value){home.hidden=value;settings.hidden=!value;(value?b:a).setAttribute('aria-current','page');(value?a:b).removeAttribute('aria-current');document.querySelector('.farm-main').scrollTop=0}a.onclick=()=>show(false);b.onclick=()=>show(true);show(false)})();
+</script></body></html>
