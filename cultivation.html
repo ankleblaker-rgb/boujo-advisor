@@ -61,4 +61,28 @@ $('prevMonth').onclick=()=>shiftMonth(-1);$('nextMonth').onclick=()=>shiftMonth(
 document.addEventListener('click',e=>{const t=e.target.closest('[data-go],[data-detail],[data-day],[data-note],[data-remove-date]');if(!t||t.disabled)return;const d=t.dataset;if(d.go)go(d.go);if(d.detail)openDetail(d.detail);if(d.day){selectedDay=d.day;renderCalendar()}if(d.note)openNote(d.note);if(d.removeDate){const values=dateValues(d.removeDate,true);values.splice(Number(d.index),1);renderDateFields(d.removeDate,values)}});document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('tr[data-detail]'))openDetail(e.target.dataset.detail)});
 window.addEventListener('beforeunload',e=>{if(dirty()||saving){e.preventDefault();e.returnValue=''}});document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});window.addEventListener('online',()=>pull());setInterval(()=>{if(!document.hidden)pull()},15000);$('calendarMonth').value=today().slice(0,7);render();pull();
 
-</script></body></html>
+</script>
+<script id="farm-hub-bottom-navigation">
+(()=>{
+ const nav=document.querySelector('nav');
+ if(!nav)return;
+ const home=nav.querySelector('button[data-go="home"],button[data-tab="home"],button[data-view="home"]');
+ if(!home)return;
+ home.setAttribute('aria-label','統合ホームへ戻る');
+ nav.addEventListener('click',event=>{
+  if(!home.contains(event.target))return;
+  event.preventDefault();event.stopImmediatePropagation();
+  const status=document.getElementById('statusButton')||document.getElementById('storageButton');
+  if(status&&/保存中/.test(status.textContent)){alert('保存が終わってから移動してください。');return;}
+  const visible=id=>{const el=document.getElementById(id);return el&&el.getClientRects().length>0;};
+  let draft=false;
+  if(visible('measure'))draft=!!document.getElementById('measureMemo')?.value.trim()||[1,2,3,4].some(n=>['ph','ec','temp'].some(k=>document.getElementById(k+n)?.value));
+  if(visible('record'))draft=!!document.getElementById('memo')?.value.trim();
+  if(visible('register'))draft=!!document.querySelector('.pesticide-check:checked')||!!document.getElementById('memo')?.value.trim();
+  if(visible('dayEditor'))draft=true;
+  if(draft&&!confirm('入力中の内容を保存せず、統合ホームへ戻りますか？'))return;
+  window.location.assign('https://ankleblaker-rgb.github.io/boujo-advisor/farm-home.html');
+ },true);
+})();
+</script>
+</body></html>
