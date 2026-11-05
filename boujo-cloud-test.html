@@ -29,7 +29,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 5px;b
 
 
 
-<p class="muted">全データ同期版 10・作業ボタン優先</p><details id="workSettings" class="card"><summary>同期・バックアップ・設定</summary><div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div><div class="card"><b>全データ同期版 10・作業ボタン優先</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div><div class="card"><h3>データのバックアップ・復元</h3><p class="muted">共有開始前や復元前にバックアップを保存してください。共有開始後は、同じGoogleアカウントでログインするとほかの端末でも全データを受け取れます。</p><button class="secondary" id="exportBackup" style="width:100%">全データをバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元後はクラウドにも反映します。先に全データのバックアップを保存してください。</p></div><button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button><div class="grid3">
+<p class="muted">全データ同期版 11・公式データ自動取得対応</p><details id="workSettings" class="card"><summary>同期・バックアップ・設定</summary><div class="card" style="border:2px solid #16834b"><h3>☁ クラウド同期テスト</h3><p class="muted">同じGoogleアカウントでログインすると、散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。最初だけ、内容が新しいパソコンで共有開始してください。</p><div id="cloudStatus" class="warn" role="status">未ログイン：端末内のテストデータのみ表示中</div><button class="secondary" id="cloudLogin" style="width:100%">Googleでログイン</button><button class="secondary hidden" id="cloudLogout" style="width:100%;margin-top:8px">ログアウト</button><button class="primary hidden" id="cloudImport">この端末の記録をクラウドへ初回移行</button><button class="secondary hidden" id="cloudRetry" style="width:100%;margin-top:8px">未同期の変更を再送</button><p class="muted" id="cloudDetail">既存の運用版は変更されません。</p></div><div class="card"><b>全データ同期版 11・公式データ自動取得対応</b><p id="syncDiagnostic" role="status">この版でメモを保存すると、送信状況をここに表示します。</p></div><div class="card"><h3>データのバックアップ・復元</h3><p class="muted">共有開始前や復元前にバックアップを保存してください。共有開始後は、同じGoogleアカウントでログインするとほかの端末でも全データを受け取れます。</p><button class="secondary" id="exportBackup" style="width:100%">全データをバックアップ（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" id="importBackup" accept=".json,application/json"><p class="muted">復元後はクラウドにも反映します。先に全データのバックアップを保存してください。</p></div><button class="secondary" id="downloadLocalCopy" style="width:100%;margin:8px 0">共有開始前の端末データの控えを保存</button><div class="grid3">
 <div class="stat"><span class="muted">栽培</span><b>水耕</b>小ネギ</div>
 <div class="stat"><span class="muted">最新散布</span><b id="latestDate">-</b></div>
 <div class="stat"><span class="muted">記録件数</span><b id="count">-</b></div>
@@ -531,7 +531,7 @@ async function officialFiles(file){
  }
  if(!result.length)throw Error('ZIPにCSVがありません');return result;
 }
-function dataStamp(name){const m=name.match(/R(\d{2})(\d{2})(\d{2})[012]\.csv$/i);return m?`${2018+Number(m[1])}-${m[2]}-${m[3]}`:null;}
+function dataStamp(name){const m=name.match(/R(\d{2})(\d{2})(\d{2})(?:_\d{4})?[012]\.csv$/i);return m?`${2018+Number(m[1])}-${m[2]}-${m[3]}`:null;}
 function relevantCrop(c){c=c.normalize('NFKC');return ['ねぎ','小ねぎ','葉ねぎ'].includes(c)||/^(ねぎ\(|野菜類|鱗茎類|作物一般)/.test(c);}
 function buildOfficialLookup(files){
  const basic=[],uses=[];const versions=new Set(),parts=new Set();
@@ -553,7 +553,7 @@ function buildOfficialLookup(files){
  if(!products.size||!uses.length)throw Error('農薬名またはねぎ関連の適用情報が見つかりません');
  return {version:1,date:[...versions][0],imported:localToday(),products:[...products.values()]};
 }
-function updateLookupStatus(){document.getElementById('lookupStatus').textContent=lookupDB?`登録反映日：${lookupDB.date}／${lookupDB.products.length}剤。農薬名を入力すると候補が出ます。公式データの自動更新は行いません。`:'初回のみ、公式データを取り込んでください。';}
+function updateLookupStatus(){document.getElementById('lookupStatus').textContent=lookupDB?`登録反映日：${lookupDB.date}／${lookupDB.products.length}剤。農薬名を入力すると候補が出ます。${lookupDB.source?.automatic?'自動取得した公式データ／取得日：'+lookupDB.imported:'手動取り込みデータ'}。`:'初回のみ、公式データを取り込んでください。';}
 try{const stored=JSON.parse(localStorage.getItem(lookupKey)||'null');if(stored?.version===1&&Array.isArray(stored.products))lookupDB=stored;}catch(e){}
 updateLookupStatus();
 document.getElementById('importLookup').onclick=async()=>{
@@ -612,7 +612,7 @@ function applySharedUI(state,raw){
  records.sort((a,b)=>b[0].localeCompare(a[0]));if(editingId)editingIndex=records.findIndex(r=>r[6]===editingId);
  render();document.getElementById('adviceResult').innerHTML='';if(editingId&&editingIndex<0)document.getElementById('saved').textContent='編集中の記録が別端末で削除されました。編集をキャンセルして内容を確認してください。';
 }
-setTimeout(()=>{if(BoujoSync.adapterVersion!==10)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
+setTimeout(()=>{if(BoujoSync.adapterVersion!==11)document.getElementById('cloudStatus').textContent='全データ同期プログラムが起動していません。更新用のHTMLとJSの両方を上書きし、オンラインで再読み込みしてください。変更は端末に保持しています。';},15000);
 renderConditionDraft();
 registrationReviewReady=true;usageReady=true;render();
 window.getSharedUI=getSharedUI;window.getLookupUI=getLookupUI;window.applySharedUI=applySharedUI;
@@ -623,7 +623,7 @@ document.getElementById('downloadLocalCopy').onclick=()=>{
 function downloadSharedJSON(data,name){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 
 </script>
-<script type="module" src="./boujo-cloud-sync.js?v=10-work-ui-20261103" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script>
+<script type="module" src="./boujo-cloud-sync.js?v=11-famic-auto-20261105" onerror="document.getElementById('cloudStatus').textContent='同期プログラムを読み込めません。変更は端末に保持しています。オンラインで再読み込みしてください。'"></script>
 
 
 
@@ -656,3 +656,4 @@ function downloadSharedJSON(data,name){const blob=new Blob([JSON.stringify(data,
 })();
 </script>
 </body></html>
+

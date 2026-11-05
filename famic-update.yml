@@ -1,0 +1,39 @@
+name: FAMIC official data update
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 23 * * *'
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: famic-official-update
+  cancel-in-progress: false
+jobs:
+  update:
+    if: github.repository == 'ankleblaker-rgb/boujo-advisor' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Authenticate to Google Cloud
+        if: vars.FAMIC_AUTO_UPDATE_ENABLED == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.FAMIC_WIF_PROVIDER }}
+          service_account: ${{ vars.FAMIC_SERVICE_ACCOUNT }}
+      - name: Set up Google Cloud CLI
+        if: vars.FAMIC_AUTO_UPDATE_ENABLED == 'true'
+        uses: google-github-actions/setup-gcloud@v3
+      - name: Validate or update official lookup
+        env:
+          PUBLISH: ${{ vars.FAMIC_AUTO_UPDATE_ENABLED }}
+        run: |
+          if [ "$PUBLISH" = "true" ]; then
+            python scripts/famic_update.py --publish
+          else
+            python scripts/famic_update.py
+          fi

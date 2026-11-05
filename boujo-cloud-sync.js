@@ -4,7 +4,7 @@ import {getFirestore,doc,onSnapshot,runTransaction,getDoc} from 'https://www.gst
 const config={apiKey:'AIzaSyCKSWObv6oueliMX7bRhTTsAy3nS065Zvg',authDomain:'farm-ai-system.firebaseapp.com',projectId:'farm-ai-system',storageBucket:'farm-ai-system.firebasestorage.app',messagingSenderId:'469927403647',appId:'1:469927403647:web:cd05e7ddc50d33ac169f4a'};
 const ADMIN='ZSbRiqTgDyVBxKf4SJTN5k1KiQP2';
 const auth=getAuth(initializeApp(config)),db=getFirestore(),S=window.BoujoSync,$=id=>document.getElementById(id);
-S.adapterVersion=10;
+S.adapterVersion=11;
 let user=null,ref=null,unsubscribe=null,ready=false,busy=false,lastRemote=null,conflict=null,epoch=0,renderVersion=0,migrating=false;
 function status(text,good=false){$('cloudStatus').className=good?'ok':'warn';$('cloudStatus').textContent=text;const n=S.pending().length;$('cloudDetail').textContent=`未同期の変更：${n}件 ／ ${user?'ログイン済み':'未ログイン'}。散布履歴・農薬一覧・使用条件・確認状態・公式検索データを共有します。`;$('cloudRetry').classList.toggle('hidden',!user||!n);}
 function clearConflict(){conflict=null;$('cloudConflict').classList.add('hidden');$('cloudConflictData').textContent='';}
@@ -48,6 +48,7 @@ onAuthStateChanged(auth,u=>{
  if(u.uid!==ADMIN){status('このGoogleアカウントにはアクセス権がありません。保存済みデータは送信しません。');return;}
  user=u;ref=doc(db,'boujo_test',ADMIN);status('全データをクラウドから読み込み中…');const subscribedEpoch=epoch;unsubscribe=onSnapshot(ref,snap=>{if(subscribedEpoch===epoch&&user)receive(snap);},error=>{if(subscribedEpoch!==epoch)return;ready=false;status('同期に接続できません：'+error.message+'。端末の変更は保持しています。');});
 });
+
 
 
 
