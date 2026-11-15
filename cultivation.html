@@ -4,7 +4,26 @@
 [hidden]{display:none!important}.memo{white-space:pre-wrap}.lot-card{display:block;width:100%;text-align:left;font-weight:400}.lot-card .dates{display:grid;gap:8px;font-size:13px;margin:14px 0}.lot-card .dates span{display:flex;justify-content:space-between;gap:12px}.toolbar.wrap{flex-wrap:wrap}.record-fields{display:grid;grid-template-columns:110px 1fr;gap:14px;margin:0}.record-fields dt{color:var(--muted);font-size:14px}.record-fields dd{margin:0;font-weight:600}.date-row{display:flex;gap:6px;margin-bottom:8px}.date-row input{flex:1}.date-remove{padding:6px 12px;flex:none}.mobile-ledger{display:none}.ledger-table{min-width:920px}.ledger-table td,.ledger-table th{text-align:left;vertical-align:top}.ledger-table th{white-space:nowrap}.ledger-table tr[data-detail]{cursor:pointer}.ledger-table tr[data-detail]:hover{background:var(--tint)}.ledger-table td:not(:last-child){white-space:nowrap}.ledger-table .ledger-memo{min-width:150px;max-width:240px;white-space:pre-wrap}.lot-card .pill{flex:none}@media(max-width:700px){.desktop-ledger{display:none}.mobile-ledger{display:block}.grid{grid-template-columns:minmax(0,1fr)}}
 .period-chart-scroll{overflow-x:auto;max-width:100%;overscroll-behavior-x:contain}.period-chart-scroll svg{display:block;max-width:none;flex:none}.period-point{cursor:pointer}.period-point:focus-visible{outline:2px solid #16834b}#periodChartTable th,#periodChartTable td{text-align:left;vertical-align:top}#periodChartTable td:last-child{white-space:nowrap}#periodChartTable button{white-space:nowrap}
 .period-range-controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.period-range-controls button{flex:1;min-width:76px;border-color:var(--green);color:var(--green)}.period-range-controls button[aria-pressed="true"]{background:var(--green);color:white}
-</style></head><body><header><div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:#16834b"><path d="M12 21V10M12 14C4 15 3 8 3 5c7 0 10 4 9 9ZM12 10c0-6 5-8 9-8 0 5-2 10-9 8Z"/></svg><div><h1>農業日誌AI/栽培履歴管理</h1><small>収穫をひと区切りに、栽培を記録。</small></div></div><button class="savebadge" id="statusButton">接続中…</button></header><main>
+</style><style id="desktop-work-layout">
+/* Match the shipping app's compact desktop actions and wide records. */
+@media(min-width:720px){
+ main{max-width:1240px}
+ .brand{padding-left:max(0px,calc((100vw - 1240px)/2))}
+ header .savebadge{margin-right:max(0px,calc((100vw - 1240px)/2))}
+ nav{padding-left:max(12px,calc((100vw - 1240px)/2));padding-right:max(12px,calc((100vw - 1240px)/2))}
+ #editor,#noteEditor{max-width:880px;margin-inline:auto}
+ #home .homecolumns{display:block}
+ #home .actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+ #home .action{min-height:76px;padding:12px 14px;gap:10px;font-size:16px}
+ #home .action small{font-size:12px;margin-top:3px}
+ #home .action .arrow{font-size:20px}
+ #home .homecolumns>.card{margin:20px 0 0}
+ #recent .lot-card .dates{font-size:15px}
+ #ledger table,#periodChartTable table{font-size:16px}
+ #ledger th,#periodChartTable th{font-size:14px}
+}
+</style>
+</head><body><header><div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:#16834b"><path d="M12 21V10M12 14C4 15 3 8 3 5c7 0 10 4 9 9ZM12 10c0-6 5-8 9-8 0 5-2 10-9 8Z"/></svg><div><h1>農業日誌AI/栽培履歴管理</h1><small>収穫をひと区切りに、栽培を記録。</small></div></div><button class="savebadge" id="statusButton">接続中…</button></header><main>
 <div id="syncPanel" class="card tint" hidden><b id="syncTitle"></b><p id="syncMessage" class="muted" role="status"></p><button id="loginNotice" class="primary" hidden>Googleでログイン</button><button id="reloadNotice">共有内容を読み直す</button></div>
 <section id="home"><p class="eyebrow" id="todayLabel"></p><h2>栽培履歴管理</h2><p class="muted">台帳の1行＝収穫のひとまとまり。場所・収穫期間・は種・定植・品種・摘要を同じ行で管理します。</p><div class="stats" id="homeStats"></div><div class="homecolumns"><div class="actions"><button class="action primary" id="newRow"><span>台帳に1行追加<small>収穫開始前でも、は種・定植から記帳できます</small></span><span class="arrow">›</span></button><button class="action" data-go="ledger"><span>栽培台帳を見る<small>新しい収穫開始日から確認・追記・修正</small></span><span class="arrow">›</span></button><button class="action tint" data-go="calendar"><span>収穫カレンダー<small>収穫開始日から記録を開く</small></span><span class="arrow">›</span></button></div><div class="card"><div class="row"><h3>収穫中の記録</h3><button class="back" id="showPending">収穫開始前 ›</button></div><div id="recent"></div></div></div><details class="card" id="settings"><summary>共有保存・バックアップ</summary><p class="muted">防除・出荷管理と同じGoogleアカウントでスマホとPCの記録を共有します。保存後は「共有保存済み」を確認してください。編集中は別端末の変更で入力画面を書き換えません。</p><p id="syncDetail" class="muted" role="status"></p><button id="login" class="primary">Googleでログイン</button><button id="logout" hidden>ログアウト</button><button id="refreshCloud">共有内容を更新</button><button id="backup">バックアップを保存</button><button id="exportCsv">台帳をCSVで出力</button><div class="field" style="margin-top:16px"><label for="restore">バックアップから復元</label><input id="restore" type="file" accept=".json,application/json"><p class="muted">栽培管理専用JSONに対応。復元はスマホ・PC共通の全栽培記録を置き換えます。は種起点の初版も読み込めます。</p></div><p class="muted">栽培管理 v2.3 · 期間グラフの月・3か月・年間表示 · 収穫ベース · GitHub／Firebase</p></details></section>
 <section id="ledger" hidden><p class="eyebrow">HARVEST-BASED LEDGER</p><h2>栽培履歴管理表</h2><div class="grid"><div class="field"><label for="monthFilter">収穫開始月</label><input id="monthFilter" type="month"><button class="back" id="clearMonth">すべての月</button></div><div class="field"><label for="stageFilter">状態</label><select id="stageFilter"><option value="">すべて</option><option value="pending">収穫開始前</option><option>収穫中</option><option>収穫終了</option></select></div></div><div class="field"><label for="search">場所・品種・摘要・日付を検索</label><input id="search" type="search" placeholder="例：3棟、品種名、は種日"></div><p class="muted">収穫開始日が新しい順に表示します。収穫開始前の記録はその後に、は種・定植の日付が新しい順に表示します。同じは種日や同じ収穫開始日でも、別々の行として記録できます。期間は、は種日から収穫開始日までの経過日数です。は種日が複数ある場合は最初の日から計算し、日付が未入力なら「—」を表示します。</p><p id="rowCount" class="muted"></p><div id="ledgerTable" class="tablewrap desktop-ledger"></div><div id="ledgerCards" class="mobile-ledger"></div><button id="addLedger" class="primary" style="width:100%;margin-top:16px">台帳に1行追加</button></section>
@@ -128,6 +147,7 @@ window.addEventListener('beforeunload',e=>{if(dirty()||saving){e.preventDefault(
 })();
 </script>
 </body></html>
+
 
 
 
